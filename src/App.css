@@ -176,7 +176,7 @@ body,
 .config-field input,
 .config-field select {
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 6px 8px;
   font-size: 13px;
 }
@@ -209,7 +209,7 @@ body,
 
 .block-item {
   border: 1px solid #94a3b8;
-  border-radius: 8px;
+  border-radius: 0;
   background: #f8fafc;
   padding: 8px 12px;
   cursor: grab;
@@ -224,6 +224,7 @@ body,
   overflow: auto;
   align-items: stretch;
   justify-content: flex-start;
+  background: #e2e8f0;
 }
 
 .canvas-drop-zone {
@@ -233,18 +234,18 @@ body,
   min-width: 1200px;
   height: 100%;
   min-height: 100%;
+  background: #ffffff;
 }
 
 .rgl-canvas {
   width: 100% !important;
   min-height: 100%;
   border: none;
-  background: #ffffff;
 }
 
 .rgl-canvas .react-grid-item.react-grid-placeholder {
   opacity: 1;
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(15, 118, 110, 0.12);
   border: 1px solid rgba(15, 118, 110, 0.4);
   box-shadow: 0 14px 36px rgba(15, 118, 110, 0.22);
@@ -273,7 +274,7 @@ body,
 .block-card {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
+  border-radius: 0;
   background: #ffffff;
   border: 2px solid #cbd5e1;
   position: relative;
@@ -465,7 +466,7 @@ body,
   min-height: 0;
   min-width: 0;
   border: 1px solid #dbe4f0;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
   position: relative;
 }
@@ -517,7 +518,7 @@ body,
   min-height: 0;
   min-width: 0;
   border: 1px solid #dbe4f0;
-  border-radius: 8px;
+  border-radius: 0;
   overflow: auto;
   padding: 6px;
   box-sizing: border-box;
@@ -562,7 +563,7 @@ body,
 
 .fabric-list-item {
   border: 1px solid #dbe4f0;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 6px;
   background: #fff;
   display: flex;
@@ -719,7 +720,7 @@ body,
   width: 24px;
   height: 24px;
   border: 1px solid #93c5fd;
-  border-radius: 8px;
+  border-radius: 0;
   background: #dbeafe;
   color: #1d4ed8;
   font-size: 14px;
@@ -736,7 +737,7 @@ body,
   width: 24px;
   height: 24px;
   border: 1px solid #fecaca;
-  border-radius: 8px;
+  border-radius: 0;
   background: #fff1f2;
   color: #be123c;
   font-size: 14px;
@@ -792,7 +793,7 @@ body,
 
 .grouping-picker-item {
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px;
   text-align: left;
   background: #f8fafc;

@@ -97,7 +97,15 @@ function App() {
   };
 
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      onMouseDownCapture={(event) => {
+        const target = event.target as HTMLElement;
+        if (!target.closest(".canvas-drop-zone")) {
+          setSelectedBlockId(null);
+        }
+      }}
+    >
       <SlidesPanel />
 
       <main className="editor-panel">

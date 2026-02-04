@@ -73,7 +73,7 @@ export function TableBlock({ config }: TableBlockProps) {
         rowHeaders
         colHeaders={["Item Alias", "Owner", "Due Date", "Priority", "Status", "Approved"]}
         width="100%"
-        height={config.height}
+        height="100%"
         stretchH="all"
         autoWrapRow
         autoWrapCol
