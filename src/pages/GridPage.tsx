@@ -15,7 +15,7 @@ type GridBlockItem = {
   label: string;
 };
 
-const clamp = (value: number, min: number) => Math.max(min, value || min);
+const clamp = (value: number, min: number) => Math.max(min, Number.isFinite(value) ? value : min);
 const preventInvalidNumberInput = (event: KeyboardEvent<HTMLInputElement>) => {
   if (["-", "+", "e", "E", "."].includes(event.key)) {
     event.preventDefault();
@@ -160,24 +160,24 @@ export function GridPage() {
                 <span>GRID_MARGIN_X</span>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   step={1}
                   inputMode="numeric"
                   value={gridMarginX}
                   onKeyDown={preventInvalidNumberInput}
-                  onChange={(e) => setGridMarginX(clamp(Number(e.target.value), 1))}
+                  onChange={(e) => setGridMarginX(clamp(Number(e.target.value), 0))}
                 />
               </label>
               <label className="config-field">
                 <span>GRID_MARGIN_Y</span>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   step={1}
                   inputMode="numeric"
                   value={gridMarginY}
                   onKeyDown={preventInvalidNumberInput}
-                  onChange={(e) => setGridMarginY(clamp(Number(e.target.value), 1))}
+                  onChange={(e) => setGridMarginY(clamp(Number(e.target.value), 0))}
                 />
               </label>
             </section>
