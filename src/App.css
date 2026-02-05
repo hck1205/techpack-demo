@@ -937,6 +937,8 @@ body,
 
 .grid-page-shell {
   padding-top: 18px;
+  padding-bottom: 18px;
+  box-sizing: border-box;
 }
 
 .grid-left-panel {
@@ -1030,6 +1032,20 @@ body,
 .grid-empty-block.is-selected {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.grid-canvas-responsive {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 100%;
+}
+
+.grid-canvas-static {
+  width: 1200px;
+  min-width: 1200px;
+  height: 1400px;
+  min-height: 1400px;
 }
 
 .construction-canvas .layer-ui__wrapper__footer {

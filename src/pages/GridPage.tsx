@@ -16,6 +16,7 @@ type GridBlockItem = {
 };
 
 const clamp = (value: number, min: number) => Math.max(min, value || min);
+const isOutOfGridBounds = (item: LayoutItem, cols: number) => item.x < 0 || item.y < 0 || item.x + item.w > cols;
 
 export function GridPage() {
   const [items, setItems] = useState<GridBlockItem[]>([]);
@@ -26,6 +27,7 @@ export function GridPage() {
   const [gridMarginX, setGridMarginX] = useState(DEFAULT_GRID_MARGIN_X);
   const [gridMarginY, setGridMarginY] = useState(DEFAULT_GRID_MARGIN_Y);
   const [compactMode, setCompactMode] = useState(true);
+  const [isResponsive, setIsResponsive] = useState(true);
 
   const layoutById = useMemo(() => new Map(layout.map((entry) => [entry.i, entry])), [layout]);
 
@@ -56,13 +58,18 @@ export function GridPage() {
   };
 
   const onLayoutChange = (nextLayout: Layout) => {
-    setLayout(
-      nextLayout.map((item) => ({
-        ...item,
-        w: Math.min(Math.max(1, item.w), gridCols),
-        h: Math.max(1, item.h),
-      }))
-    );
+    const normalized = nextLayout.map((item) => ({
+      ...item,
+      w: Math.min(Math.max(1, item.w), gridCols),
+      h: Math.max(1, item.h),
+    }));
+
+    setLayout((prev) => {
+      if (!compactMode && normalized.some((item) => isOutOfGridBounds(item, gridCols))) {
+        return prev;
+      }
+      return normalized;
+    });
   };
 
   const onGridColsChange = (nextCols: number) => {
@@ -116,6 +123,10 @@ export function GridPage() {
                 <input type="checkbox" checked={compactMode} onChange={(e) => setCompactMode(e.target.checked)} />
                 <span>Compact mode</span>
               </label>
+              <label className="config-field checkbox">
+                <input type="checkbox" checked={isResponsive} onChange={(e) => setIsResponsive(e.target.checked)} />
+                <span>Responsive layout</span>
+              </label>
               <label className="config-field">
                 <span>GRID_COLS</span>
                 <input type="number" min={1} value={gridCols} onChange={(e) => onGridColsChange(Number(e.target.value))} />
@@ -152,7 +163,7 @@ export function GridPage() {
 
           <section className="canvas-panel">
             <div
-              className="canvas-drop-zone"
+              className={`canvas-drop-zone ${isResponsive ? "grid-canvas-responsive" : "grid-canvas-static"}`}
               onMouseDown={(event) => {
                 const target = event.target as HTMLElement;
                 if (!target.closest(".react-grid-item")) {
@@ -167,6 +178,7 @@ export function GridPage() {
                 rowHeight={gridRowHeight}
                 isDraggable
                 isResizable
+                isBounded={!compactMode}
                 margin={[gridMarginX, gridMarginY]}
                 containerPadding={[gridMarginX, gridMarginY]}
                 onLayoutChange={onLayoutChange}
