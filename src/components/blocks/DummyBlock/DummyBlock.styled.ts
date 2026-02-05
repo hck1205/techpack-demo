@@ -3,6 +3,7 @@ import styled from "@emotion/styled";
 export const DummyShell = styled.div`
   width: 100%;
   height: 100%;
+  display: block;
   border: none;
   border-radius: 8px;
   background: #ffffff;
@@ -32,7 +33,8 @@ export const DummyShell = styled.div`
     pointer-events: none;
   }
 
-  &:hover::before {
+  &:hover::before,
+  .block-card:hover &::before {
     opacity: 1;
   }
 `;

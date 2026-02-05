@@ -101,7 +101,8 @@ function App() {
       className="app-shell"
       onMouseDownCapture={(event) => {
         const target = event.target as HTMLElement;
-        if (!target.closest(".canvas-drop-zone")) {
+        const isFabricListDeactivateExempt = Boolean(target.closest('[data-fabric-list-deactivate-exempt="true"]'));
+        if (!target.closest(".canvas-drop-zone") && !isFabricListDeactivateExempt) {
           setSelectedBlockId(null);
         }
       }}
@@ -119,7 +120,7 @@ function App() {
               {isToolPanelOpen ? "◀" : "▶"}
             </button>
             {isToolPanelOpen ? (
-              <aside className="left-panel">
+              <aside className="left-panel" data-fabric-list-deactivate-exempt="true">
                 <StorageToolbar />
                 <BlockLibraryPanel />
                 <BlockConfigPanel />
@@ -158,7 +159,7 @@ function App() {
                 preventCollision={false}
               >
                 {activeSlide.items.map((item) => (
-                  <div key={item.id}>
+                  <div key={item.id} className={item.type === "dummy" ? "grid-item-dummy" : "grid-item-standard"}>
                     <BlockContainer
                       type={item.type}
                       selected={selectedBlockId === item.id}

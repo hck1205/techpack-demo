@@ -1,6 +1,6 @@
 import type { BlockConfig, BlockDefinition, BlockType } from "../types/blocks";
 
-export const GRID_COLS = 10;
+export const GRID_COLS = 20;
 export const GRID_ROW_HEIGHT = 1;
 export const GRID_MARGIN_X = 1;
 export const GRID_MARGIN_Y = 1;

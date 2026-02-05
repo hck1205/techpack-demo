@@ -14,7 +14,7 @@ export function BlockConfigPanel() {
 
   if (!item) {
     return (
-      <ConfigPanel>
+      <ConfigPanel data-fabric-list-deactivate-exempt="true">
         <PanelTitle>Block Config</PanelTitle>
         <ConfigEmpty>Select a block to configure</ConfigEmpty>
       </ConfigPanel>
@@ -22,7 +22,7 @@ export function BlockConfigPanel() {
   }
 
   return (
-    <ConfigPanel>
+    <ConfigPanel data-fabric-list-deactivate-exempt="true">
       <PanelTitle>Block Config</PanelTitle>
       {item.type === "table" && <TableConfig item={item} onUpdate={onUpdate} />}
       {item.type === "react-table" && <ReactTableConfig item={item} onUpdate={onUpdate} />}
@@ -149,11 +149,17 @@ function FabricConfig({ item, onUpdate }: { item: GridItem; onUpdate: UpdateBloc
 
 function FabricListConfig({ item, onUpdate }: { item: GridItem; onUpdate: UpdateBlockConfigHandler }) {
   const config = item.config as BlockConfigMap["fabric-list"];
-  const activeFabricIndex = Math.min(Math.max(1, config.activeFabricIndex ?? 1), Math.max(1, config.count));
+  const activeFabricIndex =
+    typeof config.activeFabricIndex === "number" &&
+    config.activeFabricIndex >= 1 &&
+    config.activeFabricIndex <= Math.max(1, config.count)
+      ? config.activeFabricIndex
+      : null;
   const inputCounts = config.inputCounts ?? [];
-  const activeInputCount = Math.max(1, inputCounts[activeFabricIndex - 1] ?? 2);
+  const activeInputCount = activeFabricIndex === null ? 2 : Math.max(1, inputCounts[activeFabricIndex - 1] ?? 2);
 
   const patchActiveInputCount = (nextCount: number) => {
+    if (activeFabricIndex === null) return;
     const sanitizedCount = Math.max(1, nextCount || 1);
     const nextInputCounts = Array.from({ length: Math.max(1, config.count) }, (_, index) => inputCounts[index] ?? 2);
     nextInputCounts[activeFabricIndex - 1] = sanitizedCount;
@@ -203,7 +209,7 @@ function FabricListConfig({ item, onUpdate }: { item: GridItem; onUpdate: Update
           value={config.count}
           onChange={(event) => {
             const nextCount = Math.max(1, Number(event.target.value) || 1);
-            const nextActiveFabricIndex = Math.min(activeFabricIndex, nextCount);
+            const nextActiveFabricIndex = activeFabricIndex === null ? null : Math.min(activeFabricIndex, nextCount);
             const nextInputCounts = Array.from({ length: nextCount }, (_, index) => inputCounts[index] ?? 2);
             onUpdate(item.id, "fabric-list", {
               count: nextCount,
@@ -232,6 +238,7 @@ function FabricListConfig({ item, onUpdate }: { item: GridItem; onUpdate: Update
           min={1}
           max={20}
           value={activeInputCount}
+          disabled={activeFabricIndex === null}
           onChange={(event) => patchActiveInputCount(Number(event.target.value))}
         />
       </ConfigField>

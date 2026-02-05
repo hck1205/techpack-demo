@@ -4,7 +4,7 @@ export const Container = styled.div<{ selected: boolean; isDummy: boolean }>`
   width: 100%;
   height: 100%;
   background: #ffffff;
-  border: ${({ selected, isDummy }) => (isDummy ? "none" : `2px solid ${selected ? "#2563eb" : "#cbd5e1"}`)};
+  border: ${({ selected, isDummy }) => (isDummy ? "none" : `1px solid ${selected ? "#2563eb" : "#cbd5e1"}`)};
   position: relative;
   overflow: auto;
   z-index: 1;

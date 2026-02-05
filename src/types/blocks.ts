@@ -31,7 +31,7 @@ export type BlockConfigMap = {
     layout: "vertical" | "horizontal" | "grid";
     count: number;
     gridCols: number;
-    activeFabricIndex: number;
+    activeFabricIndex: number | null;
     inputCounts: number[];
   };
   "grouping-template": {

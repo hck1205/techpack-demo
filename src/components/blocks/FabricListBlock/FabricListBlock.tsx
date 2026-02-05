@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FabricListBlockProps } from "./FabricListBlock.types";
 
 const DEFAULT_INPUT_COUNT = 2;
@@ -9,9 +9,30 @@ export function FabricListBlock({ config, onConfigPatch }: FabricListBlockProps)
   const items = useMemo(() => Array.from({ length: count }, (_, idx) => idx + 1), [count]);
   const [images, setImages] = useState<Record<number, string>>({});
   const [inputs, setInputs] = useState<Record<string, string>>({});
+  const shellRef = useRef<HTMLDivElement>(null);
   const layout = config.layout;
-  const activeFabricIndex = Math.min(Math.max(1, config.activeFabricIndex ?? 1), count);
+  const activeFabricIndex =
+    typeof config.activeFabricIndex === "number" && config.activeFabricIndex >= 1 && config.activeFabricIndex <= count
+      ? config.activeFabricIndex
+      : null;
   const inputCounts = config.inputCounts ?? [];
+
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      const targetNode = event.target as Node | null;
+      const path = event.composedPath();
+      const isConfigPanelClick = path.some(
+        (node) => node instanceof Element && Boolean(node.closest('[data-fabric-list-deactivate-exempt="true"]'))
+      );
+
+      if (!isConfigPanelClick && !shellRef.current?.contains(targetNode as Node) && activeFabricIndex !== null) {
+        onConfigPatch?.({ activeFabricIndex: null });
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [activeFabricIndex, onConfigPatch]);
 
   const onImageChange = (index: number, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -27,7 +48,7 @@ export function FabricListBlock({ config, onConfigPatch }: FabricListBlockProps)
   };
 
   return (
-    <div className="fabric-list-shell">
+    <div className="fabric-list-shell" ref={shellRef}>
       <div
         className={`fabric-list-grid layout-${layout}`}
         style={layout === "grid" ? { gridTemplateColumns: `repeat(${Math.max(1, config.gridCols)}, 1fr)` } : {}}
