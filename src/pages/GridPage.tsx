@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import GridLayout, { WidthProvider, type Layout, type LayoutItem } from "react-grid-layout/legacy";
 import {
   GRID_BLOCK_PRESETS,
@@ -16,6 +16,11 @@ type GridBlockItem = {
 };
 
 const clamp = (value: number, min: number) => Math.max(min, value || min);
+const preventInvalidNumberInput = (event: KeyboardEvent<HTMLInputElement>) => {
+  if (["-", "+", "e", "E", "."].includes(event.key)) {
+    event.preventDefault();
+  }
+};
 const isOutOfGridBounds = (item: LayoutItem, cols: number) => item.x < 0 || item.y < 0 || item.x + item.w > cols;
 
 export function GridPage() {
@@ -129,14 +134,25 @@ export function GridPage() {
               </label>
               <label className="config-field">
                 <span>GRID_COLS</span>
-                <input type="number" min={1} value={gridCols} onChange={(e) => onGridColsChange(Number(e.target.value))} />
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={gridCols}
+                  onKeyDown={preventInvalidNumberInput}
+                  onChange={(e) => onGridColsChange(clamp(Number(e.target.value), 1))}
+                />
               </label>
               <label className="config-field">
                 <span>GRID_ROW_HEIGHT</span>
                 <input
                   type="number"
                   min={1}
+                  step={1}
+                  inputMode="numeric"
                   value={gridRowHeight}
+                  onKeyDown={preventInvalidNumberInput}
                   onChange={(e) => setGridRowHeight(clamp(Number(e.target.value), 1))}
                 />
               </label>
@@ -144,18 +160,24 @@ export function GridPage() {
                 <span>GRID_MARGIN_X</span>
                 <input
                   type="number"
-                  min={0}
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
                   value={gridMarginX}
-                  onChange={(e) => setGridMarginX(Math.max(0, Number(e.target.value) || 0))}
+                  onKeyDown={preventInvalidNumberInput}
+                  onChange={(e) => setGridMarginX(clamp(Number(e.target.value), 1))}
                 />
               </label>
               <label className="config-field">
                 <span>GRID_MARGIN_Y</span>
                 <input
                   type="number"
-                  min={0}
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
                   value={gridMarginY}
-                  onChange={(e) => setGridMarginY(Math.max(0, Number(e.target.value) || 0))}
+                  onKeyDown={preventInvalidNumberInput}
+                  onChange={(e) => setGridMarginY(clamp(Number(e.target.value), 1))}
                 />
               </label>
             </section>
