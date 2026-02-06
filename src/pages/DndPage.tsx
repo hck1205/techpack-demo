@@ -1,11 +1,6 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  type DragStartEvent,
-  useDraggable,
-} from "@dnd-kit/core";
-import { createSnapModifier, restrictToParentElement } from "@dnd-kit/modifiers";
-import { CSS } from "@dnd-kit/utilities";
+import { DndContext, type DragEndEvent, type DragStartEvent, useDraggable } from '@dnd-kit/core';
+import { createSnapModifier, restrictToParentElement } from '@dnd-kit/modifiers';
+import { CSS } from '@dnd-kit/utilities';
 import {
   useEffect,
   useLayoutEffect,
@@ -15,8 +10,8 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type RefObject,
-} from "react";
-import { GRID_BLOCK_PRESETS } from "../config/gridPage";
+} from 'react';
+import { GRID_BLOCK_PRESETS } from '../config/gridPage';
 
 type DndBlockItem = {
   id: string;
@@ -31,18 +26,19 @@ type Size = { width: number; height: number };
 
 const clamp = (value: number, min: number) => Math.max(min, Number.isFinite(value) ? value : min);
 const preventInvalidNumberInput = (event: KeyboardEvent<HTMLInputElement>) => {
-  if (["-", "+", "e", "E", "."].includes(event.key)) {
+  if (['-', '+', 'e', 'E', '.'].includes(event.key)) {
     event.preventDefault();
   }
 };
 
-const getNextY = (items: DndBlockItem[]) => items.reduce((max, item) => Math.max(max, item.y + item.h), 0);
+const getNextY = (items: DndBlockItem[]) =>
+  items.reduce((max, item) => Math.max(max, item.y + item.h), 0);
 
-const useResizeObserver = (ref: RefObject<HTMLElement>): Size => {
+const useResizeObserver = (ref: RefObject<HTMLElement | null>): Size => {
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
 
   useLayoutEffect(() => {
-    const element = ref.current;
+    const element = ref?.current;
     if (!element) return;
 
     const observer = new ResizeObserver((entries) => {
@@ -89,7 +85,7 @@ function DraggableBlock({
     <button
       ref={setNodeRef}
       type="button"
-      className={`grid-empty-block dnd-grid-block ${isSelected ? "is-selected" : ""}`}
+      className={`grid-empty-block dnd-grid-block ${isSelected ? 'is-selected' : ''}`}
       style={blockStyle}
       onMouseDown={(event) => {
         event.stopPropagation();
@@ -142,7 +138,7 @@ export function DndPage() {
         y: Math.max(0, Math.round((item.y * ratio) / gridSize) * gridSize),
         w: Math.max(1, Math.round((item.w * ratio) / gridSize) * gridSize),
         h: Math.max(1, Math.round((item.h * ratio) / gridSize) * gridSize),
-      }))
+      })),
     );
     prevGridSizeRef.current = gridSize;
   }, [gridSize]);
@@ -165,8 +161,8 @@ export function DndPage() {
                 w: nextW,
                 h: nextH,
               }
-            : item
-        )
+            : item,
+        ),
       );
     };
 
@@ -175,11 +171,11 @@ export function DndPage() {
       resizeStateRef.current = null;
     };
 
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
     return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [resizingId, gridSize]);
 
@@ -249,7 +245,7 @@ export function DndPage() {
           x: nextX,
           y: nextY,
         };
-      })
+      }),
     );
   };
 
@@ -291,7 +287,11 @@ export function DndPage() {
             <section className="grid-panel-card">
               <div className="panel-title">Grid Layout</div>
               <label className="config-field checkbox">
-                <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={showGrid}
+                  onChange={(e) => setShowGrid(e.target.checked)}
+                />
                 <span>Grid ruler</span>
               </label>
               <label className="config-field">
@@ -315,18 +315,22 @@ export function DndPage() {
               ref={canvasRef}
               onMouseDown={(event) => {
                 const target = event.target as HTMLElement;
-                if (!target.closest(".dnd-grid-block")) {
+                if (!target.closest('.dnd-grid-block')) {
                   setSelectedBlockId(null);
                 }
               }}
-            > 
-              <DndContext modifiers={[snapToGridModifier, restrictToParentElement]} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+            >
+              <DndContext
+                modifiers={[snapToGridModifier, restrictToParentElement]}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              >
                 <div
-                  className={`dnd-grid ${showGrid ? "is-grid-visible" : ""}`}
+                  className={`dnd-grid ${showGrid ? 'is-grid-visible' : ''}`}
                   style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "100%",
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
                     backgroundSize: `${gridSize}px ${gridSize}px`,
                   }}
                 >
@@ -340,12 +344,12 @@ export function DndPage() {
                         isResizing={resizingId === item.id}
                         onResizeStart={onResizeStart}
                         style={{
-                          position: "absolute",
+                          position: 'absolute',
                           left: item.x,
                           top: item.y,
                           width: item.w,
                           height: item.h,
-                          touchAction: "none",
+                          touchAction: 'none',
                         }}
                       />
                     );
