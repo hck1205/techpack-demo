@@ -7,7 +7,7 @@ export function FloatingRouteNav() {
         SlotLayout
       </NavLink>
       <NavLink to="/dnd" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
-        Ruler
+        Guide
       </NavLink>
       <NavLink to="/grid" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
         Grid
