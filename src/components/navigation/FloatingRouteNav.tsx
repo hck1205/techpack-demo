@@ -9,6 +9,9 @@ export function FloatingRouteNav() {
       <NavLink to="/dnd" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
         Guide
       </NavLink>
+      <NavLink to="/free" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
+        Free
+      </NavLink>
       <NavLink to="/grid" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
         Grid
       </NavLink>

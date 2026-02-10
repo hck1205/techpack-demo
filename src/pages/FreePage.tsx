@@ -30,7 +30,6 @@ type DndBlockItem = {
 type RulerTick = { position: number; label: string; isMajor: boolean; isCenter: boolean };
 type ObjectAlignGuide = { axis: 'x' | 'y'; position: number };
 
-const clamp = (value: number, min: number) => Math.max(min, Number.isFinite(value) ? value : min);
 const snapToGrid = (value: number, unit: number) => Math.round(value / unit) * unit;
 const PIXELS_PER_CM = 37.7952755906;
 const FIXED_CANVAS_WIDTH = 1200;
@@ -42,6 +41,7 @@ const RULER_MINOR_STEP_CM = 0.5;
 const ZOOM_STEP = 25;
 const MIN_ZOOM_PERCENT = 25;
 const MAX_ZOOM_PERCENT = 400;
+const DEFAULT_BLOCK_SIZE_UNIT = 20;
 const preventInvalidNumberInput = (event: KeyboardEvent<HTMLInputElement>) => {
   if (['-', '+', 'e', 'E', '.'].includes(event.key)) {
     event.preventDefault();
@@ -107,11 +107,10 @@ function DraggableBlock({
   );
 }
 
-export function DndPage() {
+export function FreePage() {
   const [items, setItems] = useState<DndBlockItem[]>([]);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-  const [gridSize, setGridSize] = useState(20);
-  const [showGrid, setShowGrid] = useState(true);
+  const gridSize = 1;
   const [showRuler, setShowRuler] = useState(true);
   const [zoomPercent, setZoomPercent] = useState(100);
   const [pageWidth, setPageWidth] = useState(FIXED_CANVAS_WIDTH);
@@ -122,7 +121,6 @@ export function DndPage() {
   const [showHorizontalCenterGuideWhileDragging, setShowHorizontalCenterGuideWhileDragging] = useState(false);
   const [objectAlignGuides, setObjectAlignGuides] = useState<ObjectAlignGuide[]>([]);
   const nextItemIdRef = useRef(1);
-  const prevGridSizeRef = useRef(gridSize);
   const [resizingId, setResizingId] = useState<string | null>(null);
   const resizeStateRef = useRef<{
     id: string;
@@ -132,8 +130,8 @@ export function DndPage() {
     startH: number;
   } | null>(null);
 
-  const snapToGridModifier = useMemo(() => createSnapModifier(Math.max(1, gridSize)), [gridSize]);
-  const centerGuideTolerance = useMemo(() => Math.max(1, gridSize / 2), [gridSize]);
+  const snapToGridModifier = useMemo(() => createSnapModifier(1), []);
+  const centerGuideTolerance = 1;
   const zoomScale = zoomPercent / 100;
   const canvasWidth = pageWidth;
   const canvasHeight = pageHeight;
@@ -231,23 +229,6 @@ export function DndPage() {
   }, [canvasHeight]);
 
   useEffect(() => {
-    const prev = prevGridSizeRef.current;
-    if (!prev || prev === gridSize) return;
-    const ratio = gridSize / prev;
-
-    setItems((prevItems) =>
-      prevItems.map((item) => ({
-        ...item,
-        x: Math.max(0, Math.round((item.x * ratio) / gridSize) * gridSize),
-        y: Math.max(0, Math.round((item.y * ratio) / gridSize) * gridSize),
-        w: Math.max(1, Math.round((item.w * ratio) / gridSize) * gridSize),
-        h: Math.max(1, Math.round((item.h * ratio) / gridSize) * gridSize),
-      })),
-    );
-    prevGridSizeRef.current = gridSize;
-  }, [gridSize]);
-
-  useEffect(() => {
     if (!resizingId) return;
 
     const handlePointerMove = (event: PointerEvent) => {
@@ -281,7 +262,7 @@ export function DndPage() {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [resizingId, gridSize]);
+  }, [resizingId]);
 
   const onResizeStart = (id: string, event: React.PointerEvent<HTMLDivElement>) => {
     event.stopPropagation();
@@ -313,8 +294,8 @@ export function DndPage() {
         {
           id,
           label: preset.label,
-          w: preset.w * gridSize,
-          h: preset.h * gridSize,
+          w: preset.w * DEFAULT_BLOCK_SIZE_UNIT,
+          h: preset.h * DEFAULT_BLOCK_SIZE_UNIT,
           x: 0,
           y: nextY,
         },
@@ -523,26 +504,6 @@ export function DndPage() {
               >
                 {showRuler ? 'Hide Ruler' : 'Show Ruler'}
               </button>
-              <button
-                type="button"
-                className="grid-preset-button"
-                onClick={() => setShowGrid((prev) => !prev)}
-                aria-pressed={showGrid}
-              >
-                {showGrid ? "Hide Gridline" : "Show Gridline"}
-              </button>
-              <label className="config-field">
-                <span>GRID_SIZE (px)</span>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  inputMode="numeric"
-                  value={gridSize}
-                  onKeyDown={preventInvalidNumberInput}
-                  onChange={(e) => setGridSize(clamp(Number(e.target.value), 1))}
-                />
-              </label>
               <label className="config-field">
                 <span>PAGE_WIDTH (px)</span>
                 <input
@@ -653,12 +614,11 @@ export function DndPage() {
                       </div>
                     </div>
                     <div
-                      className={`dnd-grid ${showGrid ? 'is-grid-visible' : ''}`}
+                      className="dnd-grid"
                       style={{
                         position: 'relative',
                         width: '100%',
                         height: '100%',
-                        backgroundSize: `${gridSize}px ${gridSize}px`,
                       }}
                     >
                       {showVerticalCenterGuideWhileDragging && <div className="dnd-center-guide" aria-hidden="true" />}

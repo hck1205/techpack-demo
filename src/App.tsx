@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { LayoutPage } from "./pages/LayoutPage";
 import { GridPage } from "./pages/GridPage";
 import { DndPage } from "./pages/DndPage";
+import { FreePage } from "./pages/FreePage";
 import "./App.css";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<LayoutPage />} />
         <Route path="/grid" element={<GridPage />} />
         <Route path="/dnd" element={<DndPage />} />
+        <Route path="/free" element={<FreePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
