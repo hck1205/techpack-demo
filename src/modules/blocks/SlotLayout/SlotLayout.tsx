@@ -1,8 +1,10 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type DragEvent as ReactDragEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Pane, SplitPane } from "react-split-pane";
 import { BLOCKS, defaultBlockConfig } from "../../../config/blocks";
 import { BlockCard } from "../../../components/block-card/BlockCard";
+import { draggingTypeAtom, fabricInspectorAtom, fabricListInspectorAtom } from "../../../state";
 import { createBlockShellStyle } from "../shared/blockShell";
 import type { SlotLayoutProps, SlotPaneBlock } from "./SlotLayout.types";
 
@@ -32,9 +34,14 @@ export function SlotLayout({ config, onConfigPatch, className, style }: SlotLayo
 
   const splitPercent = useMemo(() => Math.min(95, Math.max(5, config.defaultSize)), [config.defaultSize]);
   const selectableBlocks = useMemo(() => BLOCKS.filter((block) => block.type !== "slot-layout"), []);
+  const selectableTypeSet = useMemo(() => new Set(selectableBlocks.map((block) => block.type)), [selectableBlocks]);
+  const draggingType = useAtomValue(draggingTypeAtom);
+  const setFabricInspector = useSetAtom(fabricInspectorAtom);
+  const setFabricListInspector = useSetAtom(fabricListInspectorAtom);
   const [rootNode, setRootNode] = useState<SlotNode>(() => createLeafNode());
   const [pickerLeafId, setPickerLeafId] = useState<string | null>(null);
   const [activeLeafId, setActiveLeafId] = useState<string | null>(null);
+  const [dropTargetLeafId, setDropTargetLeafId] = useState<string | null>(null);
   const lastDeleteNonceRef = useRef(config.deleteAreaNonce);
 
   const mapNode = (node: SlotNode, updater: (current: SlotNode) => SlotNode): SlotNode => {
@@ -81,6 +88,17 @@ export function SlotLayout({ config, onConfigPatch, className, style }: SlotLayo
     setPickerLeafId(null);
   };
 
+  const readDragBlockType = (event: ReactDragEvent<HTMLElement>): SlotPaneBlock["type"] | null => {
+    const rawType = event.dataTransfer.getData("block/type") || event.dataTransfer.getData("text/plain");
+    if (rawType && rawType !== "slot-layout" && selectableTypeSet.has(rawType as SlotPaneBlock["type"])) {
+      return rawType as SlotPaneBlock["type"];
+    }
+    if (draggingType && draggingType !== "slot-layout" && selectableTypeSet.has(draggingType as SlotPaneBlock["type"])) {
+      return draggingType as SlotPaneBlock["type"];
+    }
+    return null;
+  };
+
   const removeLeafNode = (node: SlotNode, leafId: string): SlotNode | null => {
     if (node.kind === "leaf") {
       return node.id === leafId ? null : node;
@@ -101,6 +119,11 @@ export function SlotLayout({ config, onConfigPatch, className, style }: SlotLayo
     setRootNode((prev) => removeLeafNode(prev, leafId) ?? createLeafNode());
     setPickerLeafId((prev) => (prev === leafId ? null : prev));
     setActiveLeafId((prev) => (prev === leafId ? null : prev));
+  };
+
+  const clearInlineInspectors = () => {
+    setFabricInspector(null);
+    setFabricListInspector(null);
   };
 
   useEffect(() => {
@@ -127,8 +150,32 @@ export function SlotLayout({ config, onConfigPatch, className, style }: SlotLayo
 
   const renderLeaf = (leaf: Extract<SlotNode, { kind: "leaf" }>) => (
     <section
-      className={`slot-layout-pane ${activeLeafId === leaf.id ? "is-active" : ""}`}
-      onMouseDown={() => setActiveLeafId(leaf.id)}
+      className={`slot-layout-pane ${activeLeafId === leaf.id ? "is-active" : ""} ${dropTargetLeafId === leaf.id ? "is-drop-target" : ""}`}
+      onMouseDownCapture={() => {
+        setActiveLeafId(leaf.id);
+        clearInlineInspectors();
+      }}
+      onDragOver={(event) => {
+        if (leaf.pane) return;
+        const blockType = readDragBlockType(event);
+        if (!blockType) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setDropTargetLeafId(leaf.id);
+      }}
+      onDragLeave={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+        setDropTargetLeafId((prev) => (prev === leaf.id ? null : prev));
+      }}
+      onDrop={(event) => {
+        if (leaf.pane) return;
+        const blockType = readDragBlockType(event);
+        if (!blockType) return;
+        event.preventDefault();
+        assignBlockToLeaf(leaf.id, blockType);
+        setDropTargetLeafId(null);
+      }}
     >
       <button
         type="button"

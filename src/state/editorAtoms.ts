@@ -25,10 +25,27 @@ type AddDroppedBlockPayload = {
   blockType: BlockType;
 };
 
+type FabricListInspector = {
+  activeFabricIndex: number | null;
+  activeInputCount: number;
+  setActiveInputCount: (count: number) => void;
+};
+
+type FabricInspector = {
+  imagePosition: BlockConfigMap["fabric"]["imagePosition"];
+  inputCount: number;
+  cols: number;
+  setImagePosition: (value: BlockConfigMap["fabric"]["imagePosition"]) => void;
+  setInputCount: (value: number) => void;
+  setCols: (value: number) => void;
+};
+
 export const slidesAtom = atom<Slide[]>(INITIAL_SLIDES);
 export const activeSlideIdAtom = atom<string>(INITIAL_SLIDES[0].id);
 export const draggingTypeAtom = atom<BlockType | null>(null);
 export const selectedBlockIdAtom = atom<string | null>(null);
+export const fabricListInspectorAtom = atom<FabricListInspector | null>(null);
+export const fabricInspectorAtom = atom<FabricInspector | null>(null);
 
 export const isLoadModalOpenAtom = atom(false);
 export const savedSnapshotsAtom = atom<SnapshotMeta[]>([]);

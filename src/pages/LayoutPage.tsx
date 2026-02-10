@@ -35,7 +35,7 @@ export function LayoutPage() {
                     SlotLayout
                   </NavLink>
                   <NavLink to="/dnd" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
-                    Free
+                    Ruler
                   </NavLink>
                   <NavLink to="/grid" className={({ isActive }) => `route-nav-link ${isActive ? "is-active" : ""}`}>
                     Grid

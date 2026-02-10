@@ -1,15 +1,17 @@
 import { DndContext, type DragEndEvent, type DragStartEvent, useDraggable } from '@dnd-kit/core';
-import { restrictToParentElement } from '@dnd-kit/modifiers';
+import { createSnapModifier, restrictToParentElement } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import {
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent,
   type RefObject,
 } from 'react';
+import { FloatingRouteNav } from '../components/navigation/FloatingRouteNav';
 import { GRID_BLOCK_PRESETS } from '../config/gridPage';
 
 type DndBlockItem = {
@@ -24,6 +26,7 @@ type DndBlockItem = {
 type Size = { width: number; height: number };
 
 const clamp = (value: number, min: number) => Math.max(min, Number.isFinite(value) ? value : min);
+const snapToGrid = (value: number, unit: number) => Math.round(value / unit) * unit;
 const preventInvalidNumberInput = (event: KeyboardEvent<HTMLInputElement>) => {
   if (['-', '+', 'e', 'E', '.'].includes(event.key)) {
     event.preventDefault();
@@ -111,6 +114,7 @@ export function DndPage() {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [gridSize, setGridSize] = useState(20);
   const [showGrid, setShowGrid] = useState(true);
+  const prevGridSizeRef = useRef(gridSize);
   const [resizingId, setResizingId] = useState<string | null>(null);
   const resizeStateRef = useRef<{
     id: string;
@@ -122,6 +126,24 @@ export function DndPage() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   useResizeObserver(canvasRef);
+  const snapToGridModifier = useMemo(() => createSnapModifier(Math.max(1, gridSize)), [gridSize]);
+
+  useEffect(() => {
+    const prev = prevGridSizeRef.current;
+    if (!prev || prev === gridSize) return;
+    const ratio = gridSize / prev;
+
+    setItems((prevItems) =>
+      prevItems.map((item) => ({
+        ...item,
+        x: Math.max(0, Math.round((item.x * ratio) / gridSize) * gridSize),
+        y: Math.max(0, Math.round((item.y * ratio) / gridSize) * gridSize),
+        w: Math.max(1, Math.round((item.w * ratio) / gridSize) * gridSize),
+        h: Math.max(1, Math.round((item.h * ratio) / gridSize) * gridSize),
+      })),
+    );
+    prevGridSizeRef.current = gridSize;
+  }, [gridSize]);
 
   useEffect(() => {
     if (!resizingId) return;
@@ -131,8 +153,8 @@ export function DndPage() {
       if (!state) return;
       const deltaX = event.clientX - state.startX;
       const deltaY = event.clientY - state.startY;
-      const nextW = Math.max(gridSize, state.startW + deltaX);
-      const nextH = Math.max(gridSize, state.startH + deltaY);
+      const nextW = Math.max(gridSize, snapToGrid(state.startW + deltaX, gridSize));
+      const nextH = Math.max(gridSize, snapToGrid(state.startH + deltaY, gridSize));
       setItems((prev) =>
         prev.map((item) =>
           item.id === state.id
@@ -218,12 +240,12 @@ export function DndPage() {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const nextX = item.x + deltaX;
-        const nextY = item.y + deltaY;
+        const nextX = Math.round((item.x + deltaX) / gridSize) * gridSize;
+        const nextY = Math.round((item.y + deltaY) / gridSize) * gridSize;
         return {
           ...item,
-          x: Math.max(0, nextX),
-          y: Math.max(0, nextY),
+          x: nextX,
+          y: nextY,
         };
       }),
     );
@@ -234,6 +256,7 @@ export function DndPage() {
       <main className="editor-panel">
         <div className="editor-body tools-open">
           <aside className="left-panel grid-left-panel">
+            <FloatingRouteNav />
             <section className="grid-panel-card">
               <div className="panel-title">Empty Blocks</div>
               <div className="grid-preset-list">
@@ -301,7 +324,7 @@ export function DndPage() {
               }}
             >
               <DndContext
-                modifiers={[restrictToParentElement]}
+                modifiers={[snapToGridModifier, restrictToParentElement]}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
               >

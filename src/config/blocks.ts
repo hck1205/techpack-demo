@@ -12,8 +12,6 @@ export const BLOCKS: BlockDefinition[] = [
   { type: "editor", label: "Editor", w: 3, h: 40 },
   { type: "fabric", label: "Fabric", w: 3, h: 30 },
   { type: "fabric-list", label: "Fabric List", w: 6, h: 30 },
-  { type: "dummy", label: "Dummy Block", w: 2, h: 30 },
-  { type: "slot-layout", label: "Slot Layout", w: 5, h: 100 },
 ];
 
 export const BLOCK_SIZE = Object.fromEntries(BLOCKS.map((block) => [block.type, { w: block.w, h: block.h }])) as Record<
@@ -37,9 +35,6 @@ export const defaultBlockConfig = (type: BlockType): BlockConfig => {
   if (type === "slot-layout") {
     return { split: "vertical", defaultSize: 50, areaCount: 2, deleteAreaNonce: 0 };
   }
-  if (type === "dummy") {
-    return {};
-  }
   if (type === "editor") {
     return {
       actionNonce: 0,
@@ -51,5 +46,5 @@ export const defaultBlockConfig = (type: BlockType): BlockConfig => {
     };
   }
 
-  return { imagePosition: "left", rows: 3, cols: 1 };
+  return { imagePosition: "left", cols: 1, inputCount: 3 };
 };

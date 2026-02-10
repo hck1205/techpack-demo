@@ -1,5 +1,6 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 import GridLayout, { WidthProvider, type Layout, type LayoutItem } from "react-grid-layout/legacy";
+import { FloatingRouteNav } from "../components/navigation/FloatingRouteNav";
 import {
   GRID_BLOCK_PRESETS,
   GRID_COLS as DEFAULT_GRID_COLS,
@@ -97,6 +98,7 @@ export function GridPage() {
       <main className="editor-panel">
         <div className="editor-body tools-open">
           <aside className="left-panel grid-left-panel">
+            <FloatingRouteNav />
             <section className="grid-panel-card">
               <div className="panel-title">Empty Blocks</div>
               <div className="grid-preset-list">

@@ -1,16 +1,86 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { deleteSelectedBlockAtom, selectedItemAtom, updateBlockConfigAtom } from "../../../state";
+import {
+  deleteSelectedBlockAtom,
+  fabricInspectorAtom,
+  fabricListInspectorAtom,
+  selectedItemAtom,
+  updateBlockConfigAtom,
+} from "../../../state";
 import type { BlockConfigMap, GridItem, ImagePosition } from "../../../types/blocks";
 import { ConfigEmpty, ConfigField, ConfigFields, ConfigPanel, DeleteButton, PanelTitle } from "./BlockConfigPanel.styled";
 import type { UpdateBlockConfigHandler } from "./BlockConfigPanel.types";
 
 export function BlockConfigPanel() {
   const item = useAtomValue(selectedItemAtom);
+  const fabricInspector = useAtomValue(fabricInspectorAtom);
+  const fabricListInspector = useAtomValue(fabricListInspectorAtom);
   const updateBlockConfig = useSetAtom(updateBlockConfigAtom);
   const deleteSelectedBlock = useSetAtom(deleteSelectedBlockAtom);
   const onUpdate: UpdateBlockConfigHandler = (itemId, type, patch) => {
     updateBlockConfig({ itemId, type, patch });
   };
+
+  if (fabricInspector) {
+    return (
+      <ConfigPanel data-fabric-list-deactivate-exempt="true">
+        <PanelTitle>Block Config</PanelTitle>
+        <ConfigFields>
+          <ConfigField>
+            <span>Image position</span>
+            <select
+              value={fabricInspector.imagePosition}
+              onChange={(event) => fabricInspector.setImagePosition(event.target.value as ImagePosition)}
+            >
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+            </select>
+          </ConfigField>
+          <ConfigField>
+            <span>Input count</span>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={fabricInspector.inputCount}
+              onChange={(event) => fabricInspector.setInputCount(Number(event.target.value))}
+            />
+          </ConfigField>
+          <ConfigField>
+            <span>Cols</span>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={fabricInspector.cols}
+              onChange={(event) => fabricInspector.setCols(Number(event.target.value))}
+            />
+          </ConfigField>
+        </ConfigFields>
+      </ConfigPanel>
+    );
+  }
+
+  if (fabricListInspector) {
+    return (
+      <ConfigPanel data-fabric-list-deactivate-exempt="true">
+        <PanelTitle>Block Config</PanelTitle>
+        <ConfigFields>
+          <ConfigField>
+            <span>Input fields (active fabric)</span>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={fabricListInspector.activeInputCount}
+              onChange={(event) => fabricListInspector.setActiveInputCount(Number(event.target.value))}
+            />
+          </ConfigField>
+        </ConfigFields>
+      </ConfigPanel>
+    );
+  }
 
   if (!item) {
     return (
@@ -32,7 +102,6 @@ export function BlockConfigPanel() {
       )}
       {item.type === "fabric" && <FabricConfig item={item} onUpdate={onUpdate} />}
       {item.type === "fabric-list" && <FabricListConfig item={item} onUpdate={onUpdate} />}
-      {item.type === "dummy" && <ConfigEmpty>Dummy block has no options. Use it as a layout spacer.</ConfigEmpty>}
       {item.type === "slot-layout" && <SlotLayoutConfig item={item} onUpdate={onUpdate} />}
       <DeleteButton
         type="button"
@@ -104,6 +173,8 @@ function ConstructionConfig({ item, onUpdate }: { item: GridItem; onUpdate: Upda
 
 function FabricConfig({ item, onUpdate }: { item: GridItem; onUpdate: UpdateBlockConfigHandler }) {
   const config = item.config as BlockConfigMap["fabric"];
+  const legacyRows = (config as { rows?: number }).rows;
+  const inputCountValue = Math.max(1, config.inputCount ?? legacyRows ?? 1);
 
   return (
     <ConfigFields>
@@ -124,13 +195,15 @@ function FabricConfig({ item, onUpdate }: { item: GridItem; onUpdate: UpdateBloc
         </select>
       </ConfigField>
       <ConfigField>
-        <span>Rows</span>
+        <span>Input count</span>
         <input
           type="number"
           min={1}
-          max={10}
-          value={config.rows}
-          onChange={(event) => onUpdate(item.id, "fabric", { rows: Math.max(1, Number(event.target.value) || 1) })}
+          max={50}
+          value={inputCountValue}
+          onChange={(event) =>
+            onUpdate(item.id, "fabric", { inputCount: Math.max(1, Number(event.target.value) || 1) })
+          }
         />
       </ConfigField>
       <ConfigField>
@@ -155,51 +228,22 @@ function FabricListConfig({ item, onUpdate }: { item: GridItem; onUpdate: Update
     config.activeFabricIndex <= Math.max(1, config.count)
       ? config.activeFabricIndex
       : null;
+  const effectiveActiveFabricIndex = activeFabricIndex ?? 1;
   const inputCounts = config.inputCounts ?? [];
-  const activeInputCount = activeFabricIndex === null ? 2 : Math.max(1, inputCounts[activeFabricIndex - 1] ?? 2);
+  const activeInputCount = Math.max(1, inputCounts[effectiveActiveFabricIndex - 1] ?? 2);
 
   const patchActiveInputCount = (nextCount: number) => {
-    if (activeFabricIndex === null) return;
     const sanitizedCount = Math.max(1, nextCount || 1);
     const nextInputCounts = Array.from({ length: Math.max(1, config.count) }, (_, index) => inputCounts[index] ?? 2);
-    nextInputCounts[activeFabricIndex - 1] = sanitizedCount;
-    onUpdate(item.id, "fabric-list", { inputCounts: nextInputCounts });
+    nextInputCounts[effectiveActiveFabricIndex - 1] = sanitizedCount;
+    onUpdate(item.id, "fabric-list", {
+      activeFabricIndex: effectiveActiveFabricIndex,
+      inputCounts: nextInputCounts,
+    });
   };
 
   return (
     <ConfigFields>
-      <ConfigField>
-        <span>Layout</span>
-        <div className="radio-group">
-          <label className="radio-option">
-            <input
-              type="radio"
-              name={`fabric-list-layout-${item.id}`}
-              checked={config.layout === "horizontal"}
-              onChange={() => onUpdate(item.id, "fabric-list", { layout: "horizontal" })}
-            />
-            <span>Horizontal</span>
-          </label>
-          <label className="radio-option">
-            <input
-              type="radio"
-              name={`fabric-list-layout-${item.id}`}
-              checked={config.layout === "vertical"}
-              onChange={() => onUpdate(item.id, "fabric-list", { layout: "vertical" })}
-            />
-            <span>Vertical</span>
-          </label>
-          <label className="radio-option">
-            <input
-              type="radio"
-              name={`fabric-list-layout-${item.id}`}
-              checked={config.layout === "grid"}
-              onChange={() => onUpdate(item.id, "fabric-list", { layout: "grid" })}
-            />
-            <span>Grid</span>
-          </label>
-        </div>
-      </ConfigField>
       <ConfigField>
         <span>Count</span>
         <input
@@ -220,25 +264,12 @@ function FabricListConfig({ item, onUpdate }: { item: GridItem; onUpdate: Update
         />
       </ConfigField>
       <ConfigField>
-        <span>Grid columns</span>
-        <input
-          type="number"
-          min={1}
-          max={12}
-          value={config.gridCols}
-          onChange={(event) =>
-            onUpdate(item.id, "fabric-list", { gridCols: Math.max(1, Number(event.target.value) || 1) })
-          }
-        />
-      </ConfigField>
-      <ConfigField>
         <span>Input fields (active fabric)</span>
         <input
           type="number"
           min={1}
           max={20}
           value={activeInputCount}
-          disabled={activeFabricIndex === null}
           onChange={(event) => patchActiveInputCount(Number(event.target.value))}
         />
       </ConfigField>

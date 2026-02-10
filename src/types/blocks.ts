@@ -5,7 +5,6 @@ export type BlockType =
   | "fabric"
   | "fabric-list"
   | "editor"
-  | "dummy"
   | "slot-layout";
 
 export type ImagePosition = "left" | "right" | "top" | "bottom";
@@ -24,8 +23,8 @@ export type BlockConfigMap = {
   };
   fabric: {
     imagePosition: ImagePosition;
-    rows: number;
     cols: number;
+    inputCount: number;
   };
   "fabric-list": {
     layout: "vertical" | "horizontal" | "grid";
@@ -48,7 +47,6 @@ export type BlockConfigMap = {
     tableRows: number;
     tableCols: number;
   };
-  dummy: Record<string, never>;
 };
 
 export type BlockConfig = BlockConfigMap[BlockType];

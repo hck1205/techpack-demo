@@ -13,7 +13,6 @@ export function BlockContainer({
   return (
     <Container
       selected={selected}
-      isDummy={type === "dummy"}
       className="block-card"
       onMouseDownCapture={onActivate}
       onTouchStartCapture={onActivate}

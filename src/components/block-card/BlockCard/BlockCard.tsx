@@ -1,6 +1,5 @@
 import type { BlockConfigMap } from "../../../types/blocks";
 import { ConstructionBlock } from "../../../modules/blocks/ConstructionBlock";
-import { DummyBlock } from "../../../modules/blocks/DummyBlock";
 import { EditorBlock } from "../../../modules/blocks/EditorBlock";
 import { FabricBlock } from "../../../modules/blocks/FabricBlock";
 import { FabricListBlock } from "../../../modules/blocks/FabricListBlock";
@@ -29,9 +28,6 @@ export function BlockCard({ type, config, isActive, onSlotLayoutConfigPatch, onF
         onConfigPatch={onFabricListConfigPatch}
       />
     );
-  }
-  if (type === "dummy") {
-    return <DummyBlock config={config as BlockConfigMap["dummy"]} />;
   }
   if (type === "slot-layout") {
     return (

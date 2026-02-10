@@ -1,15 +1,15 @@
 import styled from "@emotion/styled";
 
-export const Container = styled.div<{ selected: boolean; isDummy: boolean }>`
+export const Container = styled.div<{ selected: boolean }>`
   width: 100%;
   height: 100%;
   background: #ffffff;
-  border: ${({ selected, isDummy }) => (isDummy ? "none" : `1px solid ${selected ? "#2563eb" : "#cbd5e1"}`)};
+  border: ${({ selected }) => `1px solid ${selected ? "#2563eb" : "#cbd5e1"}`};
   position: relative;
   overflow: auto;
   z-index: 1;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: ${({ selected, isDummy }) => (isDummy ? "none" : selected ? "0 0 0 2px rgba(37, 99, 235, 0.2)" : "none")};
+  box-shadow: ${({ selected }) => (selected ? "0 0 0 2px rgba(37, 99, 235, 0.2)" : "none")};
 `;
 
 export const DragHandle = styled.div`

@@ -1,4 +1,4 @@
-import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { LayoutPage } from "./pages/LayoutPage";
 import { GridPage } from "./pages/GridPage";
 import { DndPage } from "./pages/DndPage";
