@@ -14,7 +14,7 @@ export function SlidesPanel() {
   const activeSlideId = useAtomValue(activeSlideIdAtom);
   const setActiveSlideId = useSetAtom(activeSlideIdAtom);
   const addSlide = useSetAtom(addSlideAtom);
-  const [panelWidth, setPanelWidth] = useState(230);
+  const [panelWidth, setPanelWidth] = useState(68);
   const [resizeHotzone, setResizeHotzone] = useState(false);
   const startRef = useRef<{ x: number; width: number } | null>(null);
   const isCompact = panelWidth <= 130;
@@ -27,7 +27,7 @@ export function SlidesPanel() {
     const onMouseMove = (moveEvent: MouseEvent) => {
       const start = startRef.current;
       if (!start) return;
-      const nextWidth = Math.max(72, Math.min(320, start.width + (moveEvent.clientX - start.x)));
+      const nextWidth = Math.max(68, Math.min(320, start.width + (moveEvent.clientX - start.x)));
       setPanelWidth(nextWidth);
     };
 

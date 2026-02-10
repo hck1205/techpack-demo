@@ -24,9 +24,9 @@ body,
 }
 
 .slides-panel {
-  width: 230px;
-  min-width: 230px;
-  flex: 0 0 230px;
+  width: 68px;
+  min-width: 68px;
+  flex: 0 0 68px;
   padding: 18px 14px;
   border-right: 1px solid #d8dee8;
   background: #ffffff;
@@ -93,8 +93,8 @@ body,
 }
 
 .left-panel-wrapper {
-  flex: 0 0 250px;
-  min-width: 250px;
+  flex: 0 0 290px;
+  min-width: 290px;
   min-height: 0;
   display: flex;
   flex-direction: column;
