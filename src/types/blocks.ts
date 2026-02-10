@@ -6,7 +6,7 @@ export type BlockType =
   | "fabric-list"
   | "editor"
   | "dummy"
-  | "grouping-template";
+  | "slot-layout";
 
 export type ImagePosition = "left" | "right" | "top" | "bottom";
 export type EditorAction = "none" | "insert-text" | "insert-image" | "insert-table";
@@ -34,7 +34,7 @@ export type BlockConfigMap = {
     activeFabricIndex: number | null;
     inputCounts: number[];
   };
-  "grouping-template": {
+  "slot-layout": {
     split: "vertical" | "horizontal";
     defaultSize: number;
     areaCount: number;

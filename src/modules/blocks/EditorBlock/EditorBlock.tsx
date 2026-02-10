@@ -6,6 +6,7 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import { ResizableNodeView } from "@tiptap/core";
 import { NodeSelection } from "@tiptap/pm/state";
+import { createBlockShellStyle } from "../shared/blockShell";
 import {
   EditorContentWrap,
   EditorShell,
@@ -132,7 +133,7 @@ const RichImage = Image.extend({
   },
 });
 
-export function EditorBlock({ isActive }: EditorBlockProps) {
+export function EditorBlock({ isActive, className, style }: EditorBlockProps) {
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const activeImagePosRef = useRef<number | null>(null);
 
@@ -262,7 +263,7 @@ export function EditorBlock({ isActive }: EditorBlockProps) {
   };
 
   return (
-    <EditorShell>
+    <EditorShell className={className} style={createBlockShellStyle(style)}>
       {isActive ? (
         <EditorToolbar>
           <ToolbarGroup>

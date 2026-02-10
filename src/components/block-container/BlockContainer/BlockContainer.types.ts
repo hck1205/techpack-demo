@@ -5,6 +5,6 @@ export type BlockContainerProps = {
   selected: boolean;
   config: BlockConfig;
   onActivate?: () => void;
-  onGroupingConfigPatch?: (patch: Partial<BlockConfigMap["grouping-template"]>) => void;
+  onSlotLayoutConfigPatch?: (patch: Partial<BlockConfigMap["slot-layout"]>) => void;
   onFabricListConfigPatch?: (patch: Partial<BlockConfigMap["fabric-list"]>) => void;
 };

@@ -1,9 +1,14 @@
 import { Excalidraw } from "@excalidraw/excalidraw";
+import { createBlockShellStyle } from "../shared/blockShell";
 import type { ConstructionBlockProps } from "./ConstructionBlock.types";
 
-export function ConstructionBlock({ config: _config, isActive = false }: ConstructionBlockProps) {
+export function ConstructionBlock({ config: _config, isActive = false, className, style }: ConstructionBlockProps) {
+  const shellClassName = ["construction-shell", isActive ? "is-active" : "is-inactive", className]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`construction-shell ${isActive ? "is-active" : "is-inactive"}`}>
+    <div className={shellClassName} style={createBlockShellStyle(style)}>
       <div className="construction-canvas">
         <Excalidraw
           handleKeyboardGlobally

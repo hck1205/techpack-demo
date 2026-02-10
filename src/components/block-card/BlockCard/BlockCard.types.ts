@@ -4,6 +4,6 @@ export type BlockCardProps = {
   type: BlockType;
   config: BlockConfig;
   isActive: boolean;
-  onGroupingConfigPatch?: (patch: Partial<BlockConfigMap["grouping-template"]>) => void;
+  onSlotLayoutConfigPatch?: (patch: Partial<BlockConfigMap["slot-layout"]>) => void;
   onFabricListConfigPatch?: (patch: Partial<BlockConfigMap["fabric-list"]>) => void;
 };

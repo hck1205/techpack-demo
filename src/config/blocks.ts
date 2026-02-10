@@ -13,7 +13,7 @@ export const BLOCKS: BlockDefinition[] = [
   { type: "fabric", label: "Fabric", w: 3, h: 30 },
   { type: "fabric-list", label: "Fabric List", w: 6, h: 30 },
   { type: "dummy", label: "Dummy Block", w: 2, h: 30 },
-  { type: "grouping-template", label: "Grouping Template", w: 5, h: 100 },
+  { type: "slot-layout", label: "Slot Layout", w: 5, h: 100 },
 ];
 
 export const BLOCK_SIZE = Object.fromEntries(BLOCKS.map((block) => [block.type, { w: block.w, h: block.h }])) as Record<
@@ -34,7 +34,7 @@ export const defaultBlockConfig = (type: BlockType): BlockConfig => {
   if (type === "fabric-list") {
     return { layout: "horizontal", count: 4, gridCols: 2, activeFabricIndex: 1, inputCounts: [2, 2, 2, 2] };
   }
-  if (type === "grouping-template") {
+  if (type === "slot-layout") {
     return { split: "vertical", defaultSize: 50, areaCount: 2, deleteAreaNonce: 0 };
   }
   if (type === "dummy") {

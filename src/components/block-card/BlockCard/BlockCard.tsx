@@ -1,15 +1,15 @@
 import type { BlockConfigMap } from "../../../types/blocks";
-import { ConstructionBlock } from "../../blocks/ConstructionBlock";
-import { DummyBlock } from "../../blocks/DummyBlock";
-import { EditorBlock } from "../../blocks/EditorBlock";
-import { FabricBlock } from "../../blocks/FabricBlock";
-import { FabricListBlock } from "../../blocks/FabricListBlock";
-import { GroupingTemplateBlock } from "../../blocks/GroupingTemplateBlock";
-import { ReactCellTableBlock } from "../../blocks/ReactCellTableBlock";
-import { TableBlock } from "../../blocks/TableBlock";
+import { ConstructionBlock } from "../../../modules/blocks/ConstructionBlock";
+import { DummyBlock } from "../../../modules/blocks/DummyBlock";
+import { EditorBlock } from "../../../modules/blocks/EditorBlock";
+import { FabricBlock } from "../../../modules/blocks/FabricBlock";
+import { FabricListBlock } from "../../../modules/blocks/FabricListBlock";
+import { SlotLayout } from "../../../modules/blocks/SlotLayout";
+import { ReactCellTableBlock } from "../../../modules/blocks/ReactCellTableBlock";
+import { TableBlock } from "../../../modules/blocks/TableBlock";
 import type { BlockCardProps } from "./BlockCard.types";
 
-export function BlockCard({ type, config, isActive, onGroupingConfigPatch, onFabricListConfigPatch }: BlockCardProps) {
+export function BlockCard({ type, config, isActive, onSlotLayoutConfigPatch, onFabricListConfigPatch }: BlockCardProps) {
   if (type === "construction") {
     return <ConstructionBlock config={config as BlockConfigMap["construction"]} isActive={isActive} />;
   }
@@ -33,11 +33,11 @@ export function BlockCard({ type, config, isActive, onGroupingConfigPatch, onFab
   if (type === "dummy") {
     return <DummyBlock config={config as BlockConfigMap["dummy"]} />;
   }
-  if (type === "grouping-template") {
+  if (type === "slot-layout") {
     return (
-      <GroupingTemplateBlock
-        config={config as BlockConfigMap["grouping-template"]}
-        onConfigPatch={onGroupingConfigPatch}
+      <SlotLayout
+        config={config as BlockConfigMap["slot-layout"]}
+        onConfigPatch={onSlotLayoutConfigPatch}
       />
     );
   }

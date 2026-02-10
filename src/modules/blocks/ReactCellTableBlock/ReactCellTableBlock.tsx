@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createBlockShellStyle } from "../shared/blockShell";
 import type { ReactCellTableBlockProps } from "./ReactCellTableBlock.types";
 
 type ReactRow = {
@@ -11,7 +12,7 @@ type ReactRow = {
   imageUrl: string;
 };
 
-export function ReactCellTableBlock({ config }: ReactCellTableBlockProps) {
+export function ReactCellTableBlock({ config, className, style }: ReactCellTableBlockProps) {
   const imagePool = [
     "https://picsum.photos/id/1015/220/120",
     "https://picsum.photos/id/1025/220/120",
@@ -56,7 +57,7 @@ export function ReactCellTableBlock({ config }: ReactCellTableBlockProps) {
   };
 
   return (
-    <div className="react-table-shell">
+    <div className={["react-table-shell", className].filter(Boolean).join(" ")} style={createBlockShellStyle(style)}>
       <table className="react-table">
         <thead>
           <tr>

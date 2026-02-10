@@ -1,10 +1,11 @@
 import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createBlockShellStyle } from "../shared/blockShell";
 import type { FabricListBlockProps } from "./FabricListBlock.types";
 
 const DEFAULT_INPUT_COUNT = 2;
 
-export function FabricListBlock({ config, onConfigPatch }: FabricListBlockProps) {
+export function FabricListBlock({ config, onConfigPatch, className, style }: FabricListBlockProps) {
   const count = Math.max(1, config.count);
   const items = useMemo(() => Array.from({ length: count }, (_, idx) => idx + 1), [count]);
   const [images, setImages] = useState<Record<number, string>>({});
@@ -48,7 +49,11 @@ export function FabricListBlock({ config, onConfigPatch }: FabricListBlockProps)
   };
 
   return (
-    <div className="fabric-list-shell" ref={shellRef}>
+    <div
+      className={["fabric-list-shell", className].filter(Boolean).join(" ")}
+      style={createBlockShellStyle(style)}
+      ref={shellRef}
+    >
       <div
         className={`fabric-list-grid layout-${layout}`}
         style={layout === "grid" ? { gridTemplateColumns: `repeat(${Math.max(1, config.gridCols)}, 1fr)` } : {}}

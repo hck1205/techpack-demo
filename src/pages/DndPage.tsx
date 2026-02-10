@@ -1,10 +1,9 @@
 import { DndContext, type DragEndEvent, type DragStartEvent, useDraggable } from '@dnd-kit/core';
-import { createSnapModifier, restrictToParentElement } from '@dnd-kit/modifiers';
+import { restrictToParentElement } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import {
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -112,7 +111,6 @@ export function DndPage() {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [gridSize, setGridSize] = useState(20);
   const [showGrid, setShowGrid] = useState(true);
-  const prevGridSizeRef = useRef(gridSize);
   const [resizingId, setResizingId] = useState<string | null>(null);
   const resizeStateRef = useRef<{
     id: string;
@@ -125,24 +123,6 @@ export function DndPage() {
   const canvasRef = useRef<HTMLDivElement>(null);
   useResizeObserver(canvasRef);
 
-  const snapToGridModifier = useMemo(() => createSnapModifier(Math.max(1, gridSize)), [gridSize]);
-
-  useEffect(() => {
-    const prev = prevGridSizeRef.current;
-    if (!prev || prev === gridSize) return;
-    const ratio = gridSize / prev;
-    setItems((prevItems) =>
-      prevItems.map((item) => ({
-        ...item,
-        x: Math.max(0, Math.round((item.x * ratio) / gridSize) * gridSize),
-        y: Math.max(0, Math.round((item.y * ratio) / gridSize) * gridSize),
-        w: Math.max(1, Math.round((item.w * ratio) / gridSize) * gridSize),
-        h: Math.max(1, Math.round((item.h * ratio) / gridSize) * gridSize),
-      })),
-    );
-    prevGridSizeRef.current = gridSize;
-  }, [gridSize]);
-
   useEffect(() => {
     if (!resizingId) return;
 
@@ -151,8 +131,8 @@ export function DndPage() {
       if (!state) return;
       const deltaX = event.clientX - state.startX;
       const deltaY = event.clientY - state.startY;
-      const nextW = Math.max(gridSize, Math.round((state.startW + deltaX) / gridSize) * gridSize);
-      const nextH = Math.max(gridSize, Math.round((state.startH + deltaY) / gridSize) * gridSize);
+      const nextW = Math.max(gridSize, state.startW + deltaX);
+      const nextH = Math.max(gridSize, state.startH + deltaY);
       setItems((prev) =>
         prev.map((item) =>
           item.id === state.id
@@ -238,12 +218,12 @@ export function DndPage() {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const nextX = Math.round((item.x + deltaX) / gridSize) * gridSize;
-        const nextY = Math.round((item.y + deltaY) / gridSize) * gridSize;
+        const nextX = item.x + deltaX;
+        const nextY = item.y + deltaY;
         return {
           ...item,
-          x: nextX,
-          y: nextY,
+          x: Math.max(0, nextX),
+          y: Math.max(0, nextY),
         };
       }),
     );
@@ -286,14 +266,14 @@ export function DndPage() {
 
             <section className="grid-panel-card">
               <div className="panel-title">Grid Layout</div>
-              <label className="config-field checkbox">
-                <input
-                  type="checkbox"
-                  checked={showGrid}
-                  onChange={(e) => setShowGrid(e.target.checked)}
-                />
-                <span>Grid ruler</span>
-              </label>
+              <button
+                type="button"
+                className="grid-preset-button"
+                onClick={() => setShowGrid((prev) => !prev)}
+                aria-pressed={showGrid}
+              >
+                {showGrid ? "Hide Rule" : "Show Rule"}
+              </button>
               <label className="config-field">
                 <span>GRID_SIZE (px)</span>
                 <input
@@ -321,7 +301,7 @@ export function DndPage() {
               }}
             >
               <DndContext
-                modifiers={[snapToGridModifier, restrictToParentElement]}
+                modifiers={[restrictToParentElement]}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
               >

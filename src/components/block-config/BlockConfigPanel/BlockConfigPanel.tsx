@@ -33,7 +33,7 @@ export function BlockConfigPanel() {
       {item.type === "fabric" && <FabricConfig item={item} onUpdate={onUpdate} />}
       {item.type === "fabric-list" && <FabricListConfig item={item} onUpdate={onUpdate} />}
       {item.type === "dummy" && <ConfigEmpty>Dummy block has no options. Use it as a layout spacer.</ConfigEmpty>}
-      {item.type === "grouping-template" && <GroupingTemplateConfig item={item} onUpdate={onUpdate} />}
+      {item.type === "slot-layout" && <SlotLayoutConfig item={item} onUpdate={onUpdate} />}
       <DeleteButton
         type="button"
         onClick={() => {
@@ -246,8 +246,8 @@ function FabricListConfig({ item, onUpdate }: { item: GridItem; onUpdate: Update
   );
 }
 
-function GroupingTemplateConfig({ item, onUpdate }: { item: GridItem; onUpdate: UpdateBlockConfigHandler }) {
-  const config = item.config as BlockConfigMap["grouping-template"];
+function SlotLayoutConfig({ item, onUpdate }: { item: GridItem; onUpdate: UpdateBlockConfigHandler }) {
+  const config = item.config as BlockConfigMap["slot-layout"];
 
   return (
     <ConfigFields>
@@ -256,7 +256,7 @@ function GroupingTemplateConfig({ item, onUpdate }: { item: GridItem; onUpdate: 
         <button
           type="button"
           onClick={() =>
-            onUpdate(item.id, "grouping-template", {
+            onUpdate(item.id, "slot-layout", {
               deleteAreaNonce: (config.deleteAreaNonce ?? 0) + 1,
             })
           }

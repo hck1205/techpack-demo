@@ -1,5 +1,6 @@
 import type { ChangeEvent } from "react";
 import { useRef, useState } from "react";
+import { createBlockShellStyle } from "../shared/blockShell";
 import type { FabricBlockProps } from "./FabricBlock.types";
 
 const makeGrid = (rows: number, cols: number) =>
@@ -13,7 +14,7 @@ const resizeGrid = (prev: string[][], nextRows: number, nextCols: number) => {
   );
 };
 
-export function FabricBlock({ config }: FabricBlockProps) {
+export function FabricBlock({ config, className, style }: FabricBlockProps) {
   const [grid, setGrid] = useState<string[][]>(() => makeGrid(config.rows, config.cols));
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -46,7 +47,7 @@ export function FabricBlock({ config }: FabricBlockProps) {
   };
 
   return (
-    <div className="fabric-block-shell">
+    <div className={["fabric-block-shell", className].filter(Boolean).join(" ")} style={createBlockShellStyle(style)}>
       <div className={`fabric-layout pos-${config.imagePosition}`}>
         <div className={`fabric-image-panel ${imageSrc ? "" : "is-empty"}`}>
           <input

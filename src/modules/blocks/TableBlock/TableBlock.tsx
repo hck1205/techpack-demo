@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { HotTable } from "@handsontable/react-wrapper";
 import { registerAllModules } from "handsontable/registry";
+import { createBlockShellStyle } from "../shared/blockShell";
 import { TableShell } from "./TableBlock.styled";
 import type { TableBlockProps } from "./TableBlock.types";
 
 registerAllModules();
 
-export function TableBlock({ config }: TableBlockProps) {
+export function TableBlock({ config, className, style }: TableBlockProps) {
   const data = useMemo(
     () => [
       ["Keyboard", "Alice", "2026-02-10", "High", "In Progress", true],
@@ -65,7 +66,10 @@ export function TableBlock({ config }: TableBlockProps) {
   );
 
   return (
-    <TableShell className="block-table-shell">
+    <TableShell
+      className={["block-table-shell", className].filter(Boolean).join(" ")}
+      style={createBlockShellStyle(style)}
+    >
       <HotTable
         themeName="ht-theme-main"
         data={data}

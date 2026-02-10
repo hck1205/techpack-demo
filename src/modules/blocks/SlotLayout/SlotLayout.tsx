@@ -2,41 +2,42 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Pane, SplitPane } from "react-split-pane";
 import { BLOCKS, defaultBlockConfig } from "../../../config/blocks";
-import { BlockCard } from "../../block-card/BlockCard";
-import type { GroupingPaneBlock, GroupingTemplateBlockProps } from "./GroupingTemplateBlock.types";
+import { BlockCard } from "../../../components/block-card/BlockCard";
+import { createBlockShellStyle } from "../shared/blockShell";
+import type { SlotLayoutProps, SlotPaneBlock } from "./SlotLayout.types";
 
-type GroupingNode =
+type SlotNode =
   | {
       id: string;
       kind: "leaf";
-      pane: GroupingPaneBlock | null;
+      pane: SlotPaneBlock | null;
     }
   | {
       id: string;
       kind: "split";
       direction: "vertical" | "horizontal";
       ratio: number;
-      first: GroupingNode;
-      second: GroupingNode;
+      first: SlotNode;
+      second: SlotNode;
     };
 
-export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplateBlockProps) {
+export function SlotLayout({ config, onConfigPatch, className, style }: SlotLayoutProps) {
   const nodeCountRef = useRef(0);
-  const nextNodeId = () => `grouping-node-${nodeCountRef.current++}`;
-  const createLeafNode = (pane: GroupingPaneBlock | null = null): GroupingNode => ({
+  const nextNodeId = () => `slot-layout-node-${nodeCountRef.current++}`;
+  const createLeafNode = (pane: SlotPaneBlock | null = null): SlotNode => ({
     id: nextNodeId(),
     kind: "leaf",
     pane,
   });
 
   const splitPercent = useMemo(() => Math.min(95, Math.max(5, config.defaultSize)), [config.defaultSize]);
-  const selectableBlocks = useMemo(() => BLOCKS.filter((block) => block.type !== "grouping-template"), []);
-  const [rootNode, setRootNode] = useState<GroupingNode>(() => createLeafNode());
+  const selectableBlocks = useMemo(() => BLOCKS.filter((block) => block.type !== "slot-layout"), []);
+  const [rootNode, setRootNode] = useState<SlotNode>(() => createLeafNode());
   const [pickerLeafId, setPickerLeafId] = useState<string | null>(null);
   const [activeLeafId, setActiveLeafId] = useState<string | null>(null);
   const lastDeleteNonceRef = useRef(config.deleteAreaNonce);
 
-  const mapNode = (node: GroupingNode, updater: (current: GroupingNode) => GroupingNode): GroupingNode => {
+  const mapNode = (node: SlotNode, updater: (current: SlotNode) => SlotNode): SlotNode => {
     const nextNode = updater(node);
     if (nextNode !== node) return nextNode;
     if (node.kind === "leaf") return node;
@@ -64,7 +65,7 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
     setPickerLeafId(null);
   };
 
-  const assignBlockToLeaf = (leafId: string, type: GroupingPaneBlock["type"]) => {
+  const assignBlockToLeaf = (leafId: string, type: SlotPaneBlock["type"]) => {
     setRootNode((prev) =>
       mapNode(prev, (current) => {
         if (current.kind !== "leaf" || current.id !== leafId) return current;
@@ -80,7 +81,7 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
     setPickerLeafId(null);
   };
 
-  const removeLeafNode = (node: GroupingNode, leafId: string): GroupingNode | null => {
+  const removeLeafNode = (node: SlotNode, leafId: string): SlotNode | null => {
     if (node.kind === "leaf") {
       return node.id === leafId ? null : node;
     }
@@ -124,36 +125,47 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
     );
   };
 
-  const renderLeaf = (leaf: Extract<GroupingNode, { kind: "leaf" }>) => (
+  const renderLeaf = (leaf: Extract<SlotNode, { kind: "leaf" }>) => (
     <section
-      className={`grouping-pane ${activeLeafId === leaf.id ? "is-active" : ""}`}
+      className={`slot-layout-pane ${activeLeafId === leaf.id ? "is-active" : ""}`}
       onMouseDown={() => setActiveLeafId(leaf.id)}
     >
+      <button
+        type="button"
+        className="slot-layout-pane-close"
+        aria-label="Remove area"
+        onClick={(event) => {
+          event.stopPropagation();
+          deleteLeaf(leaf.id);
+        }}
+      >
+        ×
+      </button>
       {!leaf.pane ? (
-        <div className="grouping-pane-tools">
+        <div className="slot-layout-pane-tools">
           <button
-            className="grouping-pane-split-btn grouping-pane-split-btn-top"
+            className="slot-layout-pane-split-btn slot-layout-pane-split-btn-top"
             onClick={() => splitLeaf(leaf.id, "vertical")}
             aria-label="Split top and bottom"
           >
             ↑
           </button>
           <button
-            className="grouping-pane-split-btn grouping-pane-split-btn-right"
+            className="slot-layout-pane-split-btn slot-layout-pane-split-btn-right"
             onClick={() => splitLeaf(leaf.id, "horizontal")}
             aria-label="Split left and right"
           >
             →
           </button>
           <button
-            className="grouping-pane-split-btn grouping-pane-split-btn-bottom"
+            className="slot-layout-pane-split-btn slot-layout-pane-split-btn-bottom"
             onClick={() => splitLeaf(leaf.id, "vertical")}
             aria-label="Split top and bottom"
           >
             ↓
           </button>
           <button
-            className="grouping-pane-split-btn grouping-pane-split-btn-left"
+            className="slot-layout-pane-split-btn slot-layout-pane-split-btn-left"
             onClick={() => splitLeaf(leaf.id, "horizontal")}
             aria-label="Split left and right"
           >
@@ -163,12 +175,12 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
       ) : null}
 
       {leaf.pane ? (
-        <div className="grouping-pane-content">
+        <div className="slot-layout-pane-content">
           <BlockCard type={leaf.pane.type} config={defaultBlockConfig(leaf.pane.type)} isActive={false} />
         </div>
       ) : (
-        <div className="grouping-pane-empty-actions">
-          <button className="grouping-pane-add" onClick={() => setPickerLeafId(leaf.id)}>
+        <div className="slot-layout-pane-empty-actions">
+          <button className="slot-layout-pane-add" onClick={() => setPickerLeafId(leaf.id)}>
             +
           </button>
         </div>
@@ -176,7 +188,7 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
     </section>
   );
 
-  const renderSplitTree = (node: GroupingNode): ReactNode => {
+  const renderSplitTree = (node: SlotNode): ReactNode => {
     if (node.kind === "leaf") {
       return renderLeaf(node);
     }
@@ -185,7 +197,7 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
       <SplitPane
         key={node.id}
         direction={node.direction}
-        dividerClassName="grouping-resizer"
+        dividerClassName="slot-layout-resizer"
         onResizeEnd={(sizes) => updateSplitRatio(node.id, sizes)}
       >
         <Pane defaultSize={`${node.ratio}%`}>{renderSplitTree(node.first)}</Pane>
@@ -195,19 +207,19 @@ export function GroupingTemplateBlock({ config, onConfigPatch }: GroupingTemplat
   };
 
   return (
-    <div className="grouping-shell">
-      <div className="grouping-split-root">{renderSplitTree(rootNode)}</div>
+    <div className={["slot-layout-shell", className].filter(Boolean).join(" ")} style={createBlockShellStyle(style)}>
+      <div className="slot-layout-split-root">{renderSplitTree(rootNode)}</div>
       {pickerLeafId !== null
         ? createPortal(
-            <div className="grouping-picker-overlay" onClick={() => setPickerLeafId(null)}>
-              <div className="grouping-picker-modal" onClick={(event) => event.stopPropagation()}>
-                <div className="grouping-picker-title">Choose a block</div>
-                <div className="grouping-picker-list">
+            <div className="slot-layout-picker-overlay" onClick={() => setPickerLeafId(null)}>
+              <div className="slot-layout-picker-modal" onClick={(event) => event.stopPropagation()}>
+                <div className="slot-layout-picker-title">Choose a block</div>
+                <div className="slot-layout-picker-list">
                   {selectableBlocks.map((block) => (
                     <button
                       key={block.type}
-                      className="grouping-picker-item"
-                      onClick={() => assignBlockToLeaf(pickerLeafId, block.type as GroupingPaneBlock["type"])}
+                      className="slot-layout-picker-item"
+                      onClick={() => assignBlockToLeaf(pickerLeafId, block.type as SlotPaneBlock["type"])}
                     >
                       {block.label}
                     </button>

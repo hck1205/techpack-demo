@@ -7,7 +7,7 @@ export function BlockContainer({
   selected,
   config,
   onActivate,
-  onGroupingConfigPatch,
+  onSlotLayoutConfigPatch,
   onFabricListConfigPatch,
 }: BlockContainerProps) {
   return (
@@ -27,7 +27,7 @@ export function BlockContainer({
           type={type}
           config={config}
           isActive={selected}
-          onGroupingConfigPatch={onGroupingConfigPatch}
+          onSlotLayoutConfigPatch={onSlotLayoutConfigPatch}
           onFabricListConfigPatch={onFabricListConfigPatch}
         />
       </Content>
