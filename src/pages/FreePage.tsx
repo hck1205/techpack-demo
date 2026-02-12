@@ -1,5 +1,6 @@
 import {
   DndContext,
+  type Modifier,
   type DragEndEvent,
   type DragMoveEvent,
   type DragStartEvent,
@@ -301,17 +302,70 @@ export function FreePage() {
     startW: number;
     startH: number;
   } | null>(null);
+  const dragFrameRef = useRef<number | null>(null);
+  const pendingDragEventRef = useRef<DragMoveEvent | null>(null);
+  const lastGuideStateRef = useRef<{
+    showVertical: boolean;
+    showHorizontal: boolean;
+    guides: ObjectAlignGuide[];
+  }>({ showVertical: false, showHorizontal: false, guides: [] });
 
-  const snapToGridModifier = useMemo(() => createSnapModifier(1), []);
-  const zoomScale = zoomPercent / 100;
   const canvasWidth = pageWidth;
   const canvasHeight = pageHeight;
+  const itemsRef = useRef(items);
+  const canvasSizeRef = useRef({ width: canvasWidth, height: canvasHeight });
+  const snapThresholdRef = useRef({
+    object: objectSnapThreshold,
+    center: pageCenterSnapThreshold,
+  });
+  const snapToGridModifier = useMemo(() => createSnapModifier(1), []);
+  const guideSnapModifier = useMemo<Modifier>(
+    () => ({ transform, active }) => {
+      const { width, height } = canvasSizeRef.current;
+      if (!active || width <= 0) return transform;
+      const id = String(active.id);
+      const activeItem = itemsRef.current.find((item) => item.id === id);
+      if (!activeItem) return transform;
+
+      const { object, center } = snapThresholdRef.current;
+      const snapResult = getSnappedGuides({
+        activeItem,
+        nextX: activeItem.x + transform.x,
+        nextY: activeItem.y + transform.y,
+        otherItems: itemsRef.current.filter((item) => item.id !== id),
+        canvasWidth: width,
+        canvasHeight: height,
+        objectSnapThreshold: object,
+        pageCenterSnapThreshold: center,
+      });
+
+      return {
+        ...transform,
+        x: snapResult.snappedX - activeItem.x,
+        y: snapResult.snappedY - activeItem.y,
+      };
+    },
+    [],
+  );
+  const zoomScale = zoomPercent / 100;
   const baseCanvasOuterWidth = pageWidth + RULER_THICKNESS;
   const baseCanvasOuterHeight = pageHeight + RULER_THICKNESS;
   const scaledCanvasOuterWidth = baseCanvasOuterWidth * zoomScale;
   const scaledCanvasOuterHeight = baseCanvasOuterHeight * zoomScale;
   const pageWidthCm = useMemo(() => (canvasWidth > 0 ? canvasWidth / PIXELS_PER_CM : 0), [canvasWidth]);
   const pageHeightCm = useMemo(() => (canvasHeight > 0 ? canvasHeight / PIXELS_PER_CM : 0), [canvasHeight]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+  useEffect(() => {
+    canvasSizeRef.current = { width: canvasWidth, height: canvasHeight };
+  }, [canvasWidth, canvasHeight]);
+  useEffect(() => {
+    snapThresholdRef.current = {
+      object: objectSnapThreshold,
+      center: pageCenterSnapThreshold,
+    };
+  }, [objectSnapThreshold, pageCenterSnapThreshold]);
   const topRulerTicks = useMemo<RulerTick[]>(() => {
     if (canvasWidth <= 0) return [];
 
@@ -398,6 +452,32 @@ export function FreePage() {
 
     return deduped.sort((a, b) => a.position - b.position);
   }, [canvasHeight]);
+
+  const applyGuideState = (snapResult: SnapGuides) => {
+    const nextGuides = snapResult.objectAlignGuides;
+    const last = lastGuideStateRef.current;
+    const guidesMatch =
+      last.guides.length === nextGuides.length &&
+      last.guides.every(
+        (guide, index) =>
+          guide.axis === nextGuides[index]?.axis && guide.position === nextGuides[index]?.position,
+      );
+    if (
+      last.showVertical === snapResult.showVerticalCenterGuide &&
+      last.showHorizontal === snapResult.showHorizontalCenterGuide &&
+      guidesMatch
+    ) {
+      return;
+    }
+    lastGuideStateRef.current = {
+      showVertical: snapResult.showVerticalCenterGuide,
+      showHorizontal: snapResult.showHorizontalCenterGuide,
+      guides: nextGuides,
+    };
+    setShowVerticalCenterGuideWhileDragging(snapResult.showVerticalCenterGuide);
+    setShowHorizontalCenterGuideWhileDragging(snapResult.showHorizontalCenterGuide);
+    setObjectAlignGuides(nextGuides);
+  };
 
   useEffect(() => {
     if (!resizingId) return;
@@ -572,43 +652,72 @@ export function FreePage() {
 
   const onDragMove = (event: DragMoveEvent) => {
     if (canvasWidth <= 0) return;
-    const id = String(event.active.id);
-    const activeItem = items.find((item) => item.id === id);
-    if (!activeItem) {
-      setShowVerticalCenterGuideWhileDragging(false);
-      setShowHorizontalCenterGuideWhileDragging(false);
-      setObjectAlignGuides([]);
-      return;
-    }
+    pendingDragEventRef.current = event;
+    if (dragFrameRef.current) return;
+    dragFrameRef.current = requestAnimationFrame(() => {
+      dragFrameRef.current = null;
+      const latest = pendingDragEventRef.current;
+      if (!latest) return;
+      const id = String(latest.active.id);
+      const activeItem = itemsRef.current.find((item) => item.id === id);
+      if (!activeItem) {
+        applyGuideState({
+          snappedX: 0,
+          snappedY: 0,
+          showVerticalCenterGuide: false,
+          showHorizontalCenterGuide: false,
+          objectAlignGuides: [],
+        });
+        return;
+      }
 
-    const snapResult = getSnappedGuides({
-      activeItem,
-      nextX: activeItem.x + event.delta.x,
-      nextY: activeItem.y + event.delta.y,
-      otherItems: items.filter((item) => item.id !== id),
-      canvasWidth,
-      canvasHeight,
-      objectSnapThreshold,
-      pageCenterSnapThreshold,
+      const { width, height } = canvasSizeRef.current;
+      const { object, center } = snapThresholdRef.current;
+      const snapResult = getSnappedGuides({
+        activeItem,
+        nextX: activeItem.x + latest.delta.x,
+        nextY: activeItem.y + latest.delta.y,
+        otherItems: itemsRef.current.filter((item) => item.id !== id),
+        canvasWidth: width,
+        canvasHeight: height,
+        objectSnapThreshold: object,
+        pageCenterSnapThreshold: center,
+      });
+      applyGuideState(snapResult);
     });
-    setShowVerticalCenterGuideWhileDragging(snapResult.showVerticalCenterGuide);
-    setShowHorizontalCenterGuideWhileDragging(snapResult.showHorizontalCenterGuide);
-    setObjectAlignGuides(snapResult.objectAlignGuides);
   };
 
   const onDragCancel = () => {
-    setShowVerticalCenterGuideWhileDragging(false);
-    setShowHorizontalCenterGuideWhileDragging(false);
-    setObjectAlignGuides([]);
+    if (dragFrameRef.current) {
+      cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = null;
+    }
+    pendingDragEventRef.current = null;
+    applyGuideState({
+      snappedX: 0,
+      snappedY: 0,
+      showVerticalCenterGuide: false,
+      showHorizontalCenterGuide: false,
+      objectAlignGuides: [],
+    });
   };
 
   const onDragEnd = (event: DragEndEvent) => {
     const id = String(event.active.id);
     const deltaX = event.delta.x;
     const deltaY = event.delta.y;
-    setShowVerticalCenterGuideWhileDragging(false);
-    setShowHorizontalCenterGuideWhileDragging(false);
-    setObjectAlignGuides([]);
+    if (dragFrameRef.current) {
+      cancelAnimationFrame(dragFrameRef.current);
+      dragFrameRef.current = null;
+    }
+    pendingDragEventRef.current = null;
+    applyGuideState({
+      snappedX: 0,
+      snappedY: 0,
+      showVerticalCenterGuide: false,
+      showHorizontalCenterGuide: false,
+      objectAlignGuides: [],
+    });
 
     setItems((prev) =>
       prev.map((item) => {
@@ -775,7 +884,7 @@ export function FreePage() {
                 }}
               >
                 <DndContext
-                  modifiers={[snapToGridModifier, restrictToParentElement]}
+                  modifiers={[snapToGridModifier, guideSnapModifier, restrictToParentElement]}
                   onDragStart={onDragStart}
                   onDragMove={onDragMove}
                   onDragCancel={onDragCancel}
