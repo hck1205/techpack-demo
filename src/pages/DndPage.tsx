@@ -1,5 +1,6 @@
 import {
   DndContext,
+  type Modifier,
   type DragEndEvent,
   type DragMoveEvent,
   type DragStartEvent,
@@ -29,6 +30,13 @@ type DndBlockItem = {
 
 type RulerTick = { position: number; label: string; isMajor: boolean; isCenter: boolean };
 type ObjectAlignGuide = { axis: 'x' | 'y'; position: number };
+type GuideResult = {
+  snappedX: number;
+  snappedY: number;
+  showVerticalCenterGuide: boolean;
+  showHorizontalCenterGuide: boolean;
+  objectAlignGuides: ObjectAlignGuide[];
+};
 
 const clamp = (value: number, min: number) => Math.max(min, Number.isFinite(value) ? value : min);
 const snapToGrid = (value: number, unit: number) => Math.round(value / unit) * unit;
@@ -42,6 +50,8 @@ const RULER_MINOR_STEP_CM = 0.5;
 const ZOOM_STEP = 25;
 const MIN_ZOOM_PERCENT = 25;
 const MAX_ZOOM_PERCENT = 400;
+const DEFAULT_GUIDE_LINE_VISIBILITY_THRESHOLD = 16;
+const DEFAULT_GUIDE_LINE_SNAP_THRESHOLD = 16;
 const preventInvalidNumberInput = (event: KeyboardEvent<HTMLInputElement>) => {
   if (['-', '+', 'e', 'E', '.'].includes(event.key)) {
     event.preventDefault();
@@ -54,6 +64,160 @@ const isHorizontallyCentered = (item: DndBlockItem, canvasWidth: number, toleran
   Math.abs(item.x + item.w / 2 - canvasWidth / 2) <= tolerance;
 const isVerticallyCentered = (item: DndBlockItem, canvasHeight: number, tolerance: number) =>
   Math.abs(item.y + item.h / 2 - canvasHeight / 2) <= tolerance;
+
+const getGuideResult = ({
+  activeItem,
+  nextX,
+  nextY,
+  otherItems,
+  canvasWidth,
+  canvasHeight,
+  guideVisibilityThreshold,
+  guideSnapThreshold,
+}: {
+  activeItem: DndBlockItem;
+  nextX: number;
+  nextY: number;
+  otherItems: DndBlockItem[];
+  canvasWidth: number;
+  canvasHeight: number;
+  guideVisibilityThreshold: number;
+  guideSnapThreshold: number;
+}): GuideResult => {
+  const nextLeft = nextX;
+  const nextRight = nextX + activeItem.w;
+  const nextCenterX = nextX + activeItem.w / 2;
+  const nextTop = nextY;
+  const nextBottom = nextY + activeItem.h;
+  const nextCenterY = nextY + activeItem.h / 2;
+  const pageCenterX = canvasWidth / 2;
+  const pageCenterY = canvasHeight / 2;
+
+  let snapDeltaX = 0;
+  let snapDeltaY = 0;
+  let hasSnapX = false;
+  let hasSnapY = false;
+  let snapPriorityX = Number.POSITIVE_INFINITY;
+  let snapPriorityY = Number.POSITIVE_INFINITY;
+
+  const considerSnapX = (delta: number, priority: number) => {
+    const absDelta = Math.abs(delta);
+    if (absDelta > guideSnapThreshold) return;
+    if (
+      !hasSnapX ||
+      absDelta < Math.abs(snapDeltaX) ||
+      (absDelta === Math.abs(snapDeltaX) && priority < snapPriorityX)
+    ) {
+      snapDeltaX = delta;
+      hasSnapX = true;
+      snapPriorityX = priority;
+    }
+  };
+
+  const considerSnapY = (delta: number, priority: number) => {
+    const absDelta = Math.abs(delta);
+    if (absDelta > guideSnapThreshold) return;
+    if (
+      !hasSnapY ||
+      absDelta < Math.abs(snapDeltaY) ||
+      (absDelta === Math.abs(snapDeltaY) && priority < snapPriorityY)
+    ) {
+      snapDeltaY = delta;
+      hasSnapY = true;
+      snapPriorityY = priority;
+    }
+  };
+
+  considerSnapX(pageCenterX - nextCenterX, 1);
+  considerSnapY(pageCenterY - nextCenterY, 1);
+
+  otherItems.forEach((item) => {
+    const targetTop = item.y;
+    const targetBottom = item.y + item.h;
+    const targetCenterY = item.y + item.h / 2;
+    const targetLeft = item.x;
+    const targetRight = item.x + item.w;
+    const targetCenterX = item.x + item.w / 2;
+
+    considerSnapY(targetTop - nextTop, 0);
+    considerSnapY(targetBottom - nextBottom, 0);
+    considerSnapY(targetTop - nextBottom, 0);
+    considerSnapY(targetBottom - nextTop, 0);
+    considerSnapY(targetCenterY - nextCenterY, 0);
+    considerSnapX(targetLeft - nextLeft, 0);
+    considerSnapX(targetRight - nextRight, 0);
+    considerSnapX(targetLeft - nextRight, 0);
+    considerSnapX(targetRight - nextLeft, 0);
+    considerSnapX(targetCenterX - nextCenterX, 0);
+  });
+
+  const snappedX = hasSnapX ? nextX + snapDeltaX : nextX;
+  const snappedY = hasSnapY ? nextY + snapDeltaY : nextY;
+  const snappedItem = { ...activeItem, x: snappedX, y: snappedY };
+  const snappedTop = snappedItem.y;
+  const snappedBottom = snappedItem.y + snappedItem.h;
+  const snappedCenterY = snappedItem.y + snappedItem.h / 2;
+  const snappedLeft = snappedItem.x;
+  const snappedRight = snappedItem.x + snappedItem.w;
+  const snappedCenterX = snappedItem.x + snappedItem.w / 2;
+
+  const guideYs: number[] = [];
+  const guideXs: number[] = [];
+
+  otherItems.forEach((item) => {
+    const targetTop = item.y;
+    const targetBottom = item.y + item.h;
+    const targetCenterY = item.y + item.h / 2;
+    const targetLeft = item.x;
+    const targetRight = item.x + item.w;
+    const targetCenterX = item.x + item.w / 2;
+
+    if (Math.abs(snappedTop - targetTop) <= guideVisibilityThreshold) {
+      guideYs.push(targetTop);
+    }
+    if (Math.abs(snappedBottom - targetBottom) <= guideVisibilityThreshold) {
+      guideYs.push(targetBottom);
+    }
+    if (Math.abs(snappedBottom - targetTop) <= guideVisibilityThreshold) {
+      guideYs.push(targetTop);
+    }
+    if (Math.abs(snappedTop - targetBottom) <= guideVisibilityThreshold) {
+      guideYs.push(targetBottom);
+    }
+    if (Math.abs(snappedCenterY - targetCenterY) <= guideVisibilityThreshold) {
+      guideYs.push(targetCenterY);
+    }
+    if (Math.abs(snappedLeft - targetLeft) <= guideVisibilityThreshold) {
+      guideXs.push(targetLeft);
+    }
+    if (Math.abs(snappedRight - targetRight) <= guideVisibilityThreshold) {
+      guideXs.push(targetRight);
+    }
+    if (Math.abs(snappedRight - targetLeft) <= guideVisibilityThreshold) {
+      guideXs.push(targetLeft);
+    }
+    if (Math.abs(snappedLeft - targetRight) <= guideVisibilityThreshold) {
+      guideXs.push(targetRight);
+    }
+    if (Math.abs(snappedCenterX - targetCenterX) <= guideVisibilityThreshold) {
+      guideXs.push(targetCenterX);
+    }
+  });
+
+  const uniqueGuideYs = Array.from(new Set(guideYs.map((value) => Math.round(value))));
+  const uniqueGuideXs = Array.from(new Set(guideXs.map((value) => Math.round(value))));
+
+  return {
+    snappedX,
+    snappedY,
+    showVerticalCenterGuide: isHorizontallyCentered(snappedItem, canvasWidth, guideVisibilityThreshold),
+    showHorizontalCenterGuide: isVerticallyCentered(snappedItem, canvasHeight, guideVisibilityThreshold),
+    objectAlignGuides: [
+      ...uniqueGuideYs.map((position) => ({ axis: 'y' as const, position })),
+      ...uniqueGuideXs.map((position) => ({ axis: 'x' as const, position })),
+    ],
+  };
+};
 
 function DraggableBlock({
   block,
@@ -118,6 +282,10 @@ export function DndPage() {
   const [pageHeight, setPageHeight] = useState(FIXED_CANVAS_HEIGHT);
   const [pageWidthInput, setPageWidthInput] = useState(String(FIXED_CANVAS_WIDTH));
   const [pageHeightInput, setPageHeightInput] = useState(String(FIXED_CANVAS_HEIGHT));
+  const [guideLineVisibilityThreshold, setGuideLineVisibilityThreshold] = useState(
+    DEFAULT_GUIDE_LINE_VISIBILITY_THRESHOLD,
+  );
+  const [guideLineSnapThreshold, setGuideLineSnapThreshold] = useState(DEFAULT_GUIDE_LINE_SNAP_THRESHOLD);
   const [showVerticalCenterGuideWhileDragging, setShowVerticalCenterGuideWhileDragging] = useState(false);
   const [showHorizontalCenterGuideWhileDragging, setShowHorizontalCenterGuideWhileDragging] = useState(false);
   const [objectAlignGuides, setObjectAlignGuides] = useState<ObjectAlignGuide[]>([]);
@@ -132,11 +300,42 @@ export function DndPage() {
     startH: number;
   } | null>(null);
 
-  const snapToGridModifier = useMemo(() => createSnapModifier(Math.max(1, gridSize)), [gridSize]);
-  const centerGuideTolerance = useMemo(() => Math.max(1, gridSize / 2), [gridSize]);
   const zoomScale = zoomPercent / 100;
   const canvasWidth = pageWidth;
   const canvasHeight = pageHeight;
+  const snapToGridModifier = useMemo(() => createSnapModifier(Math.max(1, gridSize)), [gridSize]);
+  const guideSnapModifier = useMemo<Modifier>(
+    () => ({ transform, active }) => {
+      if (!active || canvasWidth <= 0) return transform;
+      const id = String(active.id);
+      const activeItem = items.find((item) => item.id === id);
+      if (!activeItem) return transform;
+
+      const guideResult = getGuideResult({
+        activeItem,
+        nextX: activeItem.x + transform.x,
+        nextY: activeItem.y + transform.y,
+        otherItems: items.filter((item) => item.id !== id),
+        canvasWidth,
+        canvasHeight,
+        guideVisibilityThreshold: guideLineVisibilityThreshold,
+        guideSnapThreshold: guideLineSnapThreshold,
+      });
+
+      return {
+        ...transform,
+        x: guideResult.snappedX - activeItem.x,
+        y: guideResult.snappedY - activeItem.y,
+      };
+    },
+    [
+      items,
+      canvasWidth,
+      canvasHeight,
+      guideLineVisibilityThreshold,
+      guideLineSnapThreshold,
+    ],
+  );
   const baseCanvasOuterWidth = pageWidth + RULER_THICKNESS;
   const baseCanvasOuterHeight = pageHeight + RULER_THICKNESS;
   const scaledCanvasOuterWidth = baseCanvasOuterWidth * zoomScale;
@@ -395,58 +594,19 @@ export function DndPage() {
       return;
     }
 
-    const nextItem = {
-      ...activeItem,
-      x: activeItem.x + event.delta.x,
-      y: activeItem.y + event.delta.y,
-    };
-    setShowVerticalCenterGuideWhileDragging(isHorizontallyCentered(nextItem, canvasWidth, centerGuideTolerance));
-    setShowHorizontalCenterGuideWhileDragging(isVerticallyCentered(nextItem, canvasHeight, centerGuideTolerance));
-
-    const guideYs: number[] = [];
-    const guideXs: number[] = [];
-    const nextTop = nextItem.y;
-    const nextBottom = nextItem.y + nextItem.h;
-    const nextCenterY = nextItem.y + nextItem.h / 2;
-    const nextLeft = nextItem.x;
-    const nextRight = nextItem.x + nextItem.w;
-    const nextCenterX = nextItem.x + nextItem.w / 2;
-
-    items.forEach((item) => {
-      if (item.id === id) return;
-      const targetTop = item.y;
-      const targetBottom = item.y + item.h;
-      const targetCenterY = item.y + item.h / 2;
-      const targetLeft = item.x;
-      const targetRight = item.x + item.w;
-      const targetCenterX = item.x + item.w / 2;
-
-      if (Math.abs(nextTop - targetTop) <= centerGuideTolerance) {
-        guideYs.push(targetTop);
-      }
-      if (Math.abs(nextBottom - targetBottom) <= centerGuideTolerance) {
-        guideYs.push(targetBottom);
-      }
-      if (Math.abs(nextCenterY - targetCenterY) <= centerGuideTolerance) {
-        guideYs.push(targetCenterY);
-      }
-      if (Math.abs(nextLeft - targetLeft) <= centerGuideTolerance) {
-        guideXs.push(targetLeft);
-      }
-      if (Math.abs(nextRight - targetRight) <= centerGuideTolerance) {
-        guideXs.push(targetRight);
-      }
-      if (Math.abs(nextCenterX - targetCenterX) <= centerGuideTolerance) {
-        guideXs.push(targetCenterX);
-      }
+    const guideResult = getGuideResult({
+      activeItem,
+      nextX: activeItem.x + event.delta.x,
+      nextY: activeItem.y + event.delta.y,
+      otherItems: items.filter((item) => item.id !== id),
+      canvasWidth,
+      canvasHeight,
+      guideVisibilityThreshold: guideLineVisibilityThreshold,
+      guideSnapThreshold: guideLineSnapThreshold,
     });
-
-    const uniqueGuideYs = Array.from(new Set(guideYs.map((value) => Math.round(value))));
-    const uniqueGuideXs = Array.from(new Set(guideXs.map((value) => Math.round(value))));
-    setObjectAlignGuides([
-      ...uniqueGuideYs.map((position) => ({ axis: 'y' as const, position })),
-      ...uniqueGuideXs.map((position) => ({ axis: 'x' as const, position })),
-    ]);
+    setShowVerticalCenterGuideWhileDragging(guideResult.showVerticalCenterGuide);
+    setShowHorizontalCenterGuideWhileDragging(guideResult.showHorizontalCenterGuide);
+    setObjectAlignGuides(guideResult.objectAlignGuides);
   };
 
   const onDragCancel = () => {
@@ -466,8 +626,18 @@ export function DndPage() {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const nextX = Math.round((item.x + deltaX) / gridSize) * gridSize;
-        const nextY = Math.round((item.y + deltaY) / gridSize) * gridSize;
+        const guideResult = getGuideResult({
+          activeItem: item,
+          nextX: item.x + deltaX,
+          nextY: item.y + deltaY,
+          otherItems: prev.filter((entry) => entry.id !== id),
+          canvasWidth,
+          canvasHeight,
+          guideVisibilityThreshold: guideLineVisibilityThreshold,
+          guideSnapThreshold: guideLineSnapThreshold,
+        });
+        const nextX = clamp(guideResult.snappedX, 0);
+        const nextY = clamp(guideResult.snappedY, 0);
         return {
           ...item,
           x: nextX,
@@ -544,6 +714,30 @@ export function DndPage() {
                 />
               </label>
               <label className="config-field">
+                <span>GUIDE_LINE_SNAPPING_THRESHOLD (px)</span>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={guideLineSnapThreshold}
+                  onKeyDown={preventInvalidNumberInput}
+                  onChange={(e) => setGuideLineSnapThreshold(clamp(Number(e.target.value), 1))}
+                />
+              </label>
+              <label className="config-field">
+                <span>GUIDE_LINE_VISIBLE_THRESHOLD (px)</span>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  value={guideLineVisibilityThreshold}
+                  onKeyDown={preventInvalidNumberInput}
+                  onChange={(e) => setGuideLineVisibilityThreshold(clamp(Number(e.target.value), 1))}
+                />
+              </label>
+              <label className="config-field">
                 <span>PAGE_WIDTH (px)</span>
                 <input
                   type="text"
@@ -616,7 +810,7 @@ export function DndPage() {
                 }}
               >
                 <DndContext
-                  modifiers={[snapToGridModifier, restrictToParentElement]}
+                  modifiers={[snapToGridModifier, guideSnapModifier, restrictToParentElement]}
                   onDragStart={onDragStart}
                   onDragMove={onDragMove}
                   onDragCancel={onDragCancel}
