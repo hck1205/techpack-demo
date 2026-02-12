@@ -37,6 +37,13 @@ type SnapGuides = {
   showHorizontalCenterGuide: boolean;
   objectAlignGuides: ObjectAlignGuide[];
 };
+type ResizeSnapResult = {
+  snappedW: number;
+  snappedH: number;
+  showVerticalCenterGuide: boolean;
+  showHorizontalCenterGuide: boolean;
+  objectAlignGuides: ObjectAlignGuide[];
+};
 
 const snapToGrid = (value: number, unit: number) => Math.round(value / unit) * unit;
 const PIXELS_PER_CM = 37.7952755906;
@@ -213,6 +220,140 @@ const getSnappedGuides = ({
   return {
     snappedX,
     snappedY,
+    showVerticalCenterGuide: isHorizontallyCentered(snappedItem, canvasWidth, pageCenterSnapThreshold),
+    showHorizontalCenterGuide: isVerticallyCentered(snappedItem, canvasHeight, pageCenterSnapThreshold),
+    objectAlignGuides: [
+      ...uniqueGuideYs.map((position) => ({ axis: 'y' as const, position })),
+      ...uniqueGuideXs.map((position) => ({ axis: 'x' as const, position })),
+    ],
+  };
+};
+
+const getResizeSnappedGuides = ({
+  activeItem,
+  nextW,
+  nextH,
+  otherItems,
+  canvasWidth,
+  canvasHeight,
+  objectSnapThreshold,
+  pageCenterSnapThreshold,
+  minSize,
+}: {
+  activeItem: DndBlockItem;
+  nextW: number;
+  nextH: number;
+  otherItems: DndBlockItem[];
+  canvasWidth: number;
+  canvasHeight: number;
+  objectSnapThreshold: number;
+  pageCenterSnapThreshold: number;
+  minSize: number;
+}): ResizeSnapResult => {
+  const nextRight = activeItem.x + nextW;
+  const nextCenterX = activeItem.x + nextW / 2;
+  const nextBottom = activeItem.y + nextH;
+  const nextCenterY = activeItem.y + nextH / 2;
+  const pageCenterX = canvasWidth / 2;
+  const pageCenterY = canvasHeight / 2;
+
+  let snapDeltaW = 0;
+  let snapDeltaH = 0;
+  let hasSnapW = false;
+  let hasSnapH = false;
+  let snapPriorityW = Number.POSITIVE_INFINITY;
+  let snapPriorityH = Number.POSITIVE_INFINITY;
+
+  const considerSnapW = (delta: number, priority: number, threshold: number) => {
+    const absDelta = Math.abs(delta);
+    if (absDelta > threshold) return;
+    if (
+      !hasSnapW ||
+      absDelta < Math.abs(snapDeltaW) ||
+      (absDelta === Math.abs(snapDeltaW) && priority < snapPriorityW)
+    ) {
+      snapDeltaW = delta;
+      hasSnapW = true;
+      snapPriorityW = priority;
+    }
+  };
+  const considerSnapH = (delta: number, priority: number, threshold: number) => {
+    const absDelta = Math.abs(delta);
+    if (absDelta > threshold) return;
+    if (
+      !hasSnapH ||
+      absDelta < Math.abs(snapDeltaH) ||
+      (absDelta === Math.abs(snapDeltaH) && priority < snapPriorityH)
+    ) {
+      snapDeltaH = delta;
+      hasSnapH = true;
+      snapPriorityH = priority;
+    }
+  };
+
+  considerSnapW(2 * (pageCenterX - nextCenterX), 1, pageCenterSnapThreshold);
+  considerSnapH(2 * (pageCenterY - nextCenterY), 1, pageCenterSnapThreshold);
+
+  otherItems.forEach((item) => {
+    const targetTop = item.y;
+    const targetBottom = item.y + item.h;
+    const targetCenterY = item.y + item.h / 2;
+    const targetLeft = item.x;
+    const targetRight = item.x + item.w;
+    const targetCenterX = item.x + item.w / 2;
+
+    considerSnapW(targetLeft - nextRight, 0, objectSnapThreshold);
+    considerSnapW(targetRight - nextRight, 0, objectSnapThreshold);
+    considerSnapW(2 * (targetCenterX - nextCenterX), 0, objectSnapThreshold);
+    considerSnapH(targetTop - nextBottom, 0, objectSnapThreshold);
+    considerSnapH(targetBottom - nextBottom, 0, objectSnapThreshold);
+    considerSnapH(2 * (targetCenterY - nextCenterY), 0, objectSnapThreshold);
+  });
+
+  const snappedW = Math.max(minSize, Math.round((hasSnapW ? nextW + snapDeltaW : nextW) / minSize) * minSize);
+  const snappedH = Math.max(minSize, Math.round((hasSnapH ? nextH + snapDeltaH : nextH) / minSize) * minSize);
+  const snappedItem = { ...activeItem, w: snappedW, h: snappedH };
+  const snappedRight = snappedItem.x + snappedItem.w;
+  const snappedCenterX = snappedItem.x + snappedItem.w / 2;
+  const snappedBottom = snappedItem.y + snappedItem.h;
+  const snappedCenterY = snappedItem.y + snappedItem.h / 2;
+
+  const guideYs: number[] = [];
+  const guideXs: number[] = [];
+  otherItems.forEach((item) => {
+    const targetTop = item.y;
+    const targetBottom = item.y + item.h;
+    const targetCenterY = item.y + item.h / 2;
+    const targetLeft = item.x;
+    const targetRight = item.x + item.w;
+    const targetCenterX = item.x + item.w / 2;
+
+    if (Math.abs(snappedBottom - targetTop) <= objectSnapThreshold) {
+      guideYs.push(targetTop);
+    }
+    if (Math.abs(snappedBottom - targetBottom) <= objectSnapThreshold) {
+      guideYs.push(targetBottom);
+    }
+    if (Math.abs(snappedCenterY - targetCenterY) <= objectSnapThreshold) {
+      guideYs.push(targetCenterY);
+    }
+    if (Math.abs(snappedRight - targetLeft) <= objectSnapThreshold) {
+      guideXs.push(targetLeft);
+    }
+    if (Math.abs(snappedRight - targetRight) <= objectSnapThreshold) {
+      guideXs.push(targetRight);
+    }
+    if (Math.abs(snappedCenterX - targetCenterX) <= objectSnapThreshold) {
+      guideXs.push(targetCenterX);
+    }
+  });
+
+  const uniqueGuideYs = Array.from(new Set(guideYs.map((value) => Math.round(value))));
+  const uniqueGuideXs = Array.from(new Set(guideXs.map((value) => Math.round(value))));
+
+  return {
+    snappedW,
+    snappedH,
     showVerticalCenterGuide: isHorizontallyCentered(snappedItem, canvasWidth, pageCenterSnapThreshold),
     showHorizontalCenterGuide: isVerticallyCentered(snappedItem, canvasHeight, pageCenterSnapThreshold),
     objectAlignGuides: [
@@ -489,13 +630,35 @@ export function FreePage() {
       const deltaY = event.clientY - state.startY;
       const nextW = Math.max(gridSize, snapToGrid(state.startW + deltaX, gridSize));
       const nextH = Math.max(gridSize, snapToGrid(state.startH + deltaY, gridSize));
+      const activeItem = itemsRef.current.find((item) => item.id === state.id);
+      if (!activeItem) return;
+      const { width, height } = canvasSizeRef.current;
+      const { object, center } = snapThresholdRef.current;
+      const resizeSnapResult = getResizeSnappedGuides({
+        activeItem,
+        nextW,
+        nextH,
+        otherItems: itemsRef.current.filter((item) => item.id !== state.id),
+        canvasWidth: width,
+        canvasHeight: height,
+        objectSnapThreshold: object,
+        pageCenterSnapThreshold: center,
+        minSize: gridSize,
+      });
+      applyGuideState({
+        snappedX: activeItem.x,
+        snappedY: activeItem.y,
+        showVerticalCenterGuide: resizeSnapResult.showVerticalCenterGuide,
+        showHorizontalCenterGuide: resizeSnapResult.showHorizontalCenterGuide,
+        objectAlignGuides: resizeSnapResult.objectAlignGuides,
+      });
       setItems((prev) =>
         prev.map((item) =>
           item.id === state.id
             ? {
                 ...item,
-                w: nextW,
-                h: nextH,
+                w: resizeSnapResult.snappedW,
+                h: resizeSnapResult.snappedH,
               }
             : item,
         ),
@@ -505,6 +668,13 @@ export function FreePage() {
     const handlePointerUp = () => {
       setResizingId(null);
       resizeStateRef.current = null;
+      applyGuideState({
+        snappedX: 0,
+        snappedY: 0,
+        showVerticalCenterGuide: false,
+        showHorizontalCenterGuide: false,
+        objectAlignGuides: [],
+      });
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -529,6 +699,7 @@ export function FreePage() {
       startW: item.w,
       startH: item.h,
     };
+    setObjectAlignGuides([]);
     setResizingId(id);
   };
 
