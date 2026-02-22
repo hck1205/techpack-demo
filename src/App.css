@@ -23,6 +23,15 @@ body,
   padding-top: var(--top-route-bar-height);
 }
 
+.hanson-route-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #475569;
+  font-size: 14px;
+}
+
 .app-shell {
   display: flex;
   width: 100%;
@@ -1048,9 +1057,126 @@ body,
 
 .hanson-table-page-shell {
   padding: 0;
+  flex-direction: column;
+  overflow: visible;
+  position: relative;
+}
+
+.hanson-sheet-top {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #d9dde3;
+  background: #f8fafc;
+  overflow: visible;
+}
+
+.hanson-sheet-menu {
+  display: flex;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e5e9f0;
+  align-items: center;
+}
+
+.hanson-sheet-menu-item {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #334155;
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.hanson-sheet-menu-item:hover {
+  background: #e9eef7;
+}
+
+.hanson-sheet-menu-item:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.hanson-sheet-menu-item:disabled:hover {
+  background: transparent;
+}
+
+.hanson-shortcuts {
+  position: relative;
+  z-index: 1800;
+  margin-left: 2px;
+}
+
+.hanson-shortcuts summary {
+  list-style: none;
+}
+
+.hanson-shortcuts summary::-webkit-details-marker {
+  display: none;
+}
+
+.hanson-sheet-icon-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d2d8e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hanson-sheet-icon-btn:hover {
+  background: #f1f5f9;
+}
+
+.hanson-sheet-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  display: block;
+}
+
+.hanson-shortcuts-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  bottom: auto;
+  min-width: 320px;
+  max-width: min(420px, calc(100vw - 16px));
+  border: 1px solid #d5dbe5;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #334155;
+  max-height: min(60vh, 420px);
+  overflow: auto;
+  z-index: 99999;
+}
+
+.hanson-shortcuts-panel.align-right {
+  right: 0;
+  left: auto;
+}
+
+.hanson-shortcuts-panel.align-left {
+  left: 0;
+  right: auto;
 }
 
 .hanson-table-fill {
+  position: relative;
+  display: flex;
+  align-items: stretch;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -1059,7 +1185,8 @@ body,
 }
 
 .hanson-table-host {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
   height: 100%;
 }
 
@@ -1072,6 +1199,324 @@ body,
   display: block;
   margin: 0 auto;
   background: #f8fafc;
+}
+
+.hanson-group-row-cell {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hanson-group-row-cell.is-collapsed {
+  background: #eef2ff;
+}
+
+.hanson-outline-header {
+  position: relative;
+  overflow: visible;
+}
+
+.hanson-outline-toggle {
+  position: absolute;
+  left: 1px;
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #5f6368;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #3c4043;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  pointer-events: auto;
+  z-index: 20;
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
+.hanson-outline-toggle:hover {
+  background: #f1f3f4;
+}
+
+.hanson-sortable-header {
+  position: relative;
+  padding-right: 16px !important;
+}
+
+.hanson-sort-toggle {
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hanson-sort-toggle:hover {
+  color: #1e293b;
+}
+
+.hanson-cf-high {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  font-weight: 600;
+}
+
+.hanson-cf-low {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  font-weight: 600;
+}
+
+.hanson-cf-flag {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  font-weight: 700;
+  text-align: center;
+}
+
+.hanson-cf-boolean {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+}
+
+.hanson-cf-promo {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  font-weight: 600;
+}
+
+.hanson-cf-focus {
+  background: #cffafe !important;
+  color: #0f766e !important;
+  font-weight: 600;
+}
+
+.hanson-cf-user-green {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  font-weight: 600;
+}
+
+.hanson-cf-user-red {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  font-weight: 600;
+}
+
+.hanson-cf-user-yellow {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  font-weight: 600;
+}
+
+.hanson-cf-user-blue {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  font-weight: 600;
+}
+
+.hanson-cf-user-purple {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+  font-weight: 600;
+}
+
+.hanson-cf-panel {
+  position: relative;
+  flex: 0 0 340px;
+  width: 340px;
+  max-height: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-left: 1px solid #dadce0;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: none;
+  z-index: 2;
+  overflow: auto;
+}
+
+.hanson-cf-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.hanson-cf-close-btn {
+  border: 0;
+  background: transparent;
+  color: #5f6368;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.hanson-cf-tabs {
+  display: flex;
+  gap: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.hanson-cf-tabs button {
+  border: 0;
+  background: transparent;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #5f6368;
+  cursor: pointer;
+}
+
+.hanson-cf-tabs button.is-active {
+  color: #1a73e8;
+  border-bottom: 2px solid #1a73e8;
+  margin-bottom: -1px;
+  font-weight: 600;
+}
+
+.hanson-cf-tabs button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hanson-cf-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hanson-cf-section-title {
+  color: #5f6368;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.hanson-cf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.hanson-cf-field input,
+.hanson-cf-field select {
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.hanson-cf-range-row {
+  display: flex;
+  gap: 6px;
+}
+
+.hanson-cf-range-row input {
+  flex: 1;
+}
+
+.hanson-cf-range-row button {
+  width: 30px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #5f6368;
+}
+
+.hanson-cf-style-preview {
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.hanson-cf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hanson-cf-add-btn {
+  border: 1px solid #1a73e8;
+  border-radius: 4px;
+  background: #1a73e8;
+  color: #ffffff;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.hanson-cf-secondary-btn {
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #3c4043;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.hanson-cf-rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hanson-cf-empty {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.hanson-cf-rule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #ffffff;
+}
+
+.hanson-cf-rule-item label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hanson-cf-rule-item button {
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 11px;
 }
 
 .grid-page-shell {
