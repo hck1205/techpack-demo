@@ -1,4 +1,4 @@
-import { useEffect, type MutableRefObject, type RefObject } from "react";
+import { useEffect, useRef, type MutableRefObject, type RefObject } from "react";
 import Handsontable from "handsontable";
 import { registerAllModules } from "handsontable/registry";
 import type { HiddenRows } from "handsontable/plugins/hiddenRows";
@@ -21,7 +21,6 @@ type SortConfig = { column: number; sortOrder: SortOrder };
 
 const DRAG_FILL_COLUMN_INDEX = HANSON_COL_HEADERS.indexOf("drag fill");
 const FORMULA_COLUMN_INDEX = HANSON_COL_HEADERS.indexOf("formula");
-const CONDITIONAL_FORMAT_COLUMN_INDEX = HANSON_COL_HEADERS.indexOf("conditional formatting");
 const ADVANCED_FILTER_SORT_COLUMN_INDEX = HANSON_COL_HEADERS.indexOf("advanced filtering and sorting");
 const CONDITIONAL_FORMAT_CLASS_NAMES = [
   "hanson-cf-high",
@@ -247,6 +246,12 @@ export function useHansonHandsontable(
   conditionalRulesRef?: MutableRefObject<HansonConditionalRule[]>,
   onSelectionRangeChange?: (rangeRef: string) => void
 ): void {
+  const onSelectionRangeChangeRef = useRef(onSelectionRangeChange);
+
+  useEffect(() => {
+    onSelectionRangeChangeRef.current = onSelectionRangeChange;
+  }, [onSelectionRangeChange]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
@@ -602,14 +607,15 @@ export function useHansonHandsontable(
     window.addEventListener("keydown", handleSpreadsheetShortcuts, true);
 
     hot.addHook("afterSelectionEnd", (row, col, row2, col2) => {
-      if (!onSelectionRangeChange) {
+      const selectionChangeHandler = onSelectionRangeChangeRef.current;
+      if (!selectionChangeHandler) {
         return;
       }
       const rowRange = normalizeRange(row, row2);
       const colRange = normalizeRange(col, col2);
       const startRef = `${indexToColumnLabel(colRange.start)}${rowRange.start + 1}`;
       const endRef = `${indexToColumnLabel(colRange.end)}${rowRange.end + 1}`;
-      onSelectionRangeChange(startRef === endRef ? startRef : `${startRef}:${endRef}`);
+      selectionChangeHandler(startRef === endRef ? startRef : `${startRef}:${endRef}`);
     });
 
     hot.addHook("afterGetRowHeader", (row, th) => {
@@ -680,14 +686,6 @@ export function useHansonHandsontable(
 
       if (col === FORMULA_COLUMN_INDEX && typeof value === "string" && value.trim().startsWith("=")) {
         td.classList.add("hanson-cf-flag");
-      }
-
-      if (
-        col === CONDITIONAL_FORMAT_COLUMN_INDEX &&
-        typeof value === "string" &&
-        value.trim().toLowerCase().includes("promo")
-      ) {
-        td.classList.add("hanson-cf-boolean");
       }
 
       if (col === ADVANCED_FILTER_SORT_COLUMN_INDEX && typeof value === "string") {
@@ -776,6 +774,9 @@ export function useHansonHandsontable(
 
     hot.rootElement.addEventListener("mousedown", handleOutlineToggleMouseDown, true);
     hot.rootElement.addEventListener("mousedown", handleSortToggleMouseDown, true);
+    // Handsontable renders once during construction, before our custom hooks are attached.
+    // Force an immediate rerender so initial paint includes conditional formatting/header UI hooks.
+    hot.render();
 
     return () => {
       if (hotInstanceRef) {
@@ -789,5 +790,5 @@ export function useHansonHandsontable(
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [containerRef, data, hotInstanceRef, conditionalRulesRef, onSelectionRangeChange]);
+  }, [containerRef, data, hotInstanceRef, conditionalRulesRef]);
 }

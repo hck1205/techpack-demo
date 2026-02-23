@@ -13,6 +13,16 @@ export function HansonTablePage() {
   const INITIAL_ROW_COUNT = 400;
   const TARGET_ROW_COUNT = 10000;
   const APPEND_BATCH_SIZE = 200;
+  const INITIAL_CONDITIONAL_RULES: HansonConditionalRule[] = [
+    {
+      id: "cf-default-promo",
+      enabled: true,
+      columnRef: "C:C",
+      operator: "containsText",
+      value1: "promo",
+      styleKey: "purple",
+    },
+  ];
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hotRef = useRef<Handsontable | null>(null);
@@ -22,12 +32,13 @@ export function HansonTablePage() {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isConditionalPanelOpen, setIsConditionalPanelOpen] = useState(false);
   const [shortcutsAlign, setShortcutsAlign] = useState<"align-left" | "align-right">("align-right");
-  const [conditionalRules, setConditionalRules] = useState<HansonConditionalRule[]>([]);
+  const [conditionalRules, setConditionalRules] = useState<HansonConditionalRule[]>(INITIAL_CONDITIONAL_RULES);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [ruleColumnRef, setRuleColumnRef] = useState("C:C");
-  const [ruleOperator, setRuleOperator] = useState<HansonConditionalOperator>("greaterThan");
-  const [ruleValue1, setRuleValue1] = useState("150000");
+  const [ruleOperator, setRuleOperator] = useState<HansonConditionalOperator>("containsText");
+  const [ruleValue1, setRuleValue1] = useState("promo");
   const [ruleValue2, setRuleValue2] = useState("");
-  const [ruleStyleKey, setRuleStyleKey] = useState<HansonConditionalStyleKey>("green");
+  const [ruleStyleKey, setRuleStyleKey] = useState<HansonConditionalStyleKey>("purple");
   const handleSelectionRangeChange = useCallback((rangeRef: string) => {
     setRuleColumnRef(rangeRef);
   }, []);
@@ -51,6 +62,11 @@ export function HansonTablePage() {
     const timer = window.setInterval(() => {
       const hot = hotRef.current;
       if (!hot) {
+        return;
+      }
+      const activeEditor = hot.getActiveEditor?.();
+      // Avoid tearing down in-progress edits: row append triggers rerender and closes editor.
+      if (activeEditor?.isOpened?.()) {
         return;
       }
       if (appendedCount >= TARGET_ROW_COUNT) {
@@ -141,14 +157,23 @@ export function HansonTablePage() {
   const requiresSecondValue = ruleOperator === "between";
   const requiresValue = !["isEmpty", "isNotEmpty"].includes(ruleOperator);
 
-  const handleAddConditionalRule = () => {
+  const resetRuleForm = () => {
+    setEditingRuleId(null);
+    setRuleColumnRef("C:C");
+    setRuleOperator("containsText");
+    setRuleValue1("promo");
+    setRuleValue2("");
+    setRuleStyleKey("purple");
+  };
+
+  const handleSaveConditionalRule = () => {
     const normalizedColumnRef = ruleColumnRef.trim();
     if (!normalizedColumnRef) {
       return;
     }
 
-    const newRule: HansonConditionalRule = {
-      id: `cf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    const nextRule: HansonConditionalRule = {
+      id: editingRuleId ?? `cf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       enabled: true,
       columnRef: normalizedColumnRef,
       operator: ruleOperator,
@@ -156,12 +181,28 @@ export function HansonTablePage() {
       value1: requiresValue ? ruleValue1 : undefined,
       value2: requiresSecondValue ? ruleValue2 : undefined,
     };
-    setConditionalRules((prev) => [newRule, ...prev]);
+
+    setConditionalRules((prev) => {
+      if (!editingRuleId) {
+        return [nextRule, ...prev];
+      }
+      return prev.map((prevRule) => (prevRule.id === editingRuleId ? { ...prevRule, ...nextRule } : prevRule));
+    });
+    resetRuleForm();
   };
 
   const handleDoneConditionalRule = () => {
-    handleAddConditionalRule();
+    handleSaveConditionalRule();
     setIsConditionalPanelOpen(false);
+  };
+
+  const handleEditConditionalRule = (rule: HansonConditionalRule) => {
+    setEditingRuleId(rule.id);
+    setRuleColumnRef(rule.columnRef);
+    setRuleOperator(rule.operator);
+    setRuleValue1(rule.value1 ?? "");
+    setRuleValue2(rule.value2 ?? "");
+    setRuleStyleKey(rule.styleKey);
   };
 
   const describeRule = (rule: HansonConditionalRule): string => {
@@ -329,12 +370,17 @@ export function HansonTablePage() {
                 </select>
               </label>
               <div className="hanson-cf-actions">
-                <button type="button" className="hanson-cf-secondary-btn" onClick={handleAddConditionalRule}>
-                  + Add another rule
+                <button type="button" className="hanson-cf-secondary-btn" onClick={handleSaveConditionalRule}>
+                  {editingRuleId ? "Update rule" : "+ Add another rule"}
                 </button>
                 <button type="button" className="hanson-cf-add-btn" onClick={handleDoneConditionalRule}>
                   Done
                 </button>
+                {editingRuleId ? (
+                  <button type="button" className="hanson-cf-secondary-btn" onClick={resetRuleForm}>
+                    Cancel edit
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="hanson-cf-section-title">Rules</div>
@@ -363,6 +409,12 @@ export function HansonTablePage() {
                       />
                       {describeRule(rule)}
                     </label>
+                    <button
+                      type="button"
+                      onClick={() => handleEditConditionalRule(rule)}
+                    >
+                      Edit
+                    </button>
                     <button
                       type="button"
                       onClick={() => setConditionalRules((prev) => prev.filter((prevRule) => prevRule.id !== rule.id))}
